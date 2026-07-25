@@ -1,0 +1,18 @@
+{
+  "name": "hono-cqrs-prac",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot src/main.ts",
+    "start": "bun run src/main.ts",
+    "typecheck": "tsc --noEmit",
+    "check:updates": "pnpm outdated --recursive --long"
+  },
+  "dependencies": {
+    "hono": "^4.12.32"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}

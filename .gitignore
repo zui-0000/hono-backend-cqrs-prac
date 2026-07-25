@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+logs/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Bun (このプロジェクトは pnpm で install するため bun.lock は生成させない方針)
+bun.lockb
+
+# Editor / OS
+.DS_Store
+.idea/
+*.swp
+
+# Test coverage
+coverage/

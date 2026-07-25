@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    // --- 出力 (Bun が直接 TS を実行するため emit しない) ---
+    "noEmit": true,
+    "target": "ESNext",
+    "lib": ["ESNext"],
+    "module": "Preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+
+    // --- Bun のグローバル型 ---
+    "types": ["bun"],
+
+    // --- パスエイリアス (package by feature の import を短く保つ)
+    //     TS 7 で baseUrl は廃止。paths は tsconfig の場所を基準に解決される ---
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    // --- 厳格化 (DDD の学習用途なので型で守りを固める) ---
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*.ts"]
+}
