@@ -1,0 +1,5 @@
+# pnpm の設定ファイル (pnpm 11 で package.json の "pnpm" フィールドから移設)。
+# allowBuilds: postinstall 等のビルドスクリプト実行を明示許可するパッケージ。
+#   drizzle-kit が依存する esbuild は TS 設定の解析にネイティブバイナリが必要なため許可する。
+allowBuilds:
+  esbuild: true

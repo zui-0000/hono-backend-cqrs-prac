@@ -4,7 +4,7 @@
     "noEmit": true,
     "target": "ESNext",
     "lib": ["ESNext"],
-    "module": "Preserve",
+    "module": "ESNext",
     "moduleResolution": "bundler",
     "moduleDetection": "force",
     "allowImportingTsExtensions": true,
@@ -14,9 +14,10 @@
     "types": ["bun"],
 
     // --- パスエイリアス (package by feature の import を短く保つ)
-    //     TS 7 で baseUrl は廃止。paths は tsconfig の場所を基準に解決される ---
+    //     TS 7 で baseUrl は廃止。paths は tsconfig の場所を基準に解決される。
+    //     ~ を採用: @scope 付き npm パッケージ (@types/*, @hono/* 等) との混同を避けるため ---
     "paths": {
-      "@/*": ["./src/*"]
+      "~/*": ["./src/*"]
     },
 
     // --- 厳格化 (DDD の学習用途なので型で守りを固める) ---
