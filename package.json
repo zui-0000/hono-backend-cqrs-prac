@@ -13,8 +13,6 @@
     "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types",
     "generate:api": "orval",
     "prepare": "pnpm generate:api",
-    "db:up": "docker compose up -d",
-    "db:stop": "docker compose stop",
     "db:generate": "drizzle-kit generate --config ./src/shared/db/drizzle.config.ts",
     "db:migrate": "bun run src/shared/db/scripts/migrate.ts",
     "db:studio": "drizzle-kit studio --config ./src/shared/db/drizzle.config.ts"

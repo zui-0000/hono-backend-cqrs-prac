@@ -5,6 +5,7 @@
   "scripts": {
     "build": "pnpm run format && tsp compile src",
     "format": "tsp format .",
+    "preview": "echo 'Redoc: http://localhost:8080' && docker compose up",
     "check:updates": "pnpm outdated --recursive --long"
   },
   "devDependencies": {

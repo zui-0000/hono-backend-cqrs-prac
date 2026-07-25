@@ -1,0 +1,13 @@
+# 生成した OpenAPI (dist/openapi.yaml) を Redoc で閲覧するための compose。
+# `pnpm preview` (schema 配下) で起動し http://localhost:8080 で確認する。
+# Redoc は閲覧専用 (Try it out なし)。認証要件も operation ごとに明示される。
+# 先に `pnpm build` で dist/openapi.yaml を生成しておくこと。
+services:
+  redoc:
+    image: redocly/redoc:v2.5.3
+    ports:
+      - "8080:80"
+    volumes:
+      - ./dist:/usr/share/nginx/html/dist
+    environment:
+      SPEC_URL: /dist/openapi.yaml

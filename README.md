@@ -34,8 +34,8 @@ pnpm install
 # 3. 環境変数を用意（ローカル DB 接続情報）
 cp .env.example .env
 
-# 4. 開発用 PostgreSQL を起動
-pnpm db:up
+# 4. 開発用 PostgreSQL を起動（停止は docker compose stop）
+docker compose up -d
 
 # 5. マイグレーションを生成（スキーマ変更時。初回 clone は既存 migration があるので省略可）
 pnpm db:generate --name <name>
@@ -66,10 +66,11 @@ pnpm dev
 | `pnpm format:fix`                | 整形適用                                                |
 | `pnpm lint:fix`                  | lint 自動修正 → 整形 → 型チェック（一括）               |
 | `pnpm generate:api`              | OpenAPI から zod スキーマを生成（orval, src/generated） |
-| `pnpm db:up` / `db:stop`         | 開発用 Postgres の起動 / 停止                           |
 | `pnpm db:generate --name <name>` | マイグレーション生成（TS スキーマ → SQL）               |
 | `pnpm db:migrate`                | マイグレーション適用                                    |
 | `pnpm db:studio`                 | Drizzle Studio（GUI）                                   |
+
+> DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose stop` を直接実行する（pnpm スクリプトにはしていない）。
 
 ### スキーマ（TypeSpec / `schema/` 別プロジェクト）
 
@@ -81,6 +82,8 @@ pnpm dev
 | `pnpm -C schema format` | `.tsp` を整形                                        |
 
 スキーマ変更後は **`pnpm -C schema build` → `pnpm generate:api`** の順で zod まで反映する。
+
+`pnpm -C schema preview` で生成した OpenAPI を Redoc（`http://localhost:8080`, 要 Docker）に表示できる。
 
 ## ディレクトリ構成
 
