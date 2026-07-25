@@ -24,4 +24,5 @@ model NotFoundErrorResponse {
 /** サーバーエラー */
 model InternalServerErrorResponse {
   @statusCode statusCode: 500;
+  @body error: InternalServerErrorException;
 }

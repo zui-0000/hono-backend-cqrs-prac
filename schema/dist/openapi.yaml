@@ -33,6 +33,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Auth
       requestBody:
@@ -57,6 +61,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Auth
       security:
@@ -87,6 +95,10 @@ paths:
                 $ref: '#/components/schemas/UnauthorizedException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Auth
       requestBody:
@@ -115,6 +127,10 @@ paths:
                 $ref: '#/components/schemas/BadRequestException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Users
       requestBody:
@@ -154,6 +170,10 @@ paths:
                 $ref: '#/components/schemas/ResourceNotFoundException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Users
       security:
@@ -190,6 +210,10 @@ paths:
                 $ref: '#/components/schemas/ResourceNotFoundException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Users
       requestBody:
@@ -226,6 +250,10 @@ paths:
                 $ref: '#/components/schemas/ResourceNotFoundException'
         '500':
           description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
       tags:
         - Users
       security:
@@ -345,6 +373,26 @@ components:
         mailAddress:
           $ref: '#/components/schemas/MailAddress'
       title: GetUserResult
+    InternalServerErrorException:
+      type: object
+      required:
+        - errorCode
+        - message
+        - meta
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          $ref: '#/components/schemas/ErrorMessage'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      description: サーバー内部で予期せぬエラーが発生した
+      title: InternalServerErrorException
+      examples:
+        - errorCode: '5000'
+          message: InternalServerErrorException
+          meta:
+            respondedAt: '2025-01-01T12:00:00Z'
     LoginRequest:
       type: object
       required:
