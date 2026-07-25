@@ -258,6 +258,53 @@ paths:
         - Users
       security:
         - BearerAuth: []
+  /users/{id}/password:
+    put:
+      operationId: changePassword
+      description: パスワードを変更する (要認証。現在のパスワードで本人確認する)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '204':
+          description: 成功
+        '400':
+          description: リクエスト内容が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestException'
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
+        '404':
+          description: リソースが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceNotFoundException'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalServerErrorException'
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      security:
+        - BearerAuth: []
 components:
   schemas:
     AccessToken:
@@ -297,6 +344,17 @@ components:
           details:
             - field: email
               message: メールアドレスの形式が不正です
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          $ref: '#/components/schemas/Password'
+        newPassword:
+          $ref: '#/components/schemas/Password'
+      title: ChangePasswordRequest
     CommonResponseMeta:
       type: object
       required:

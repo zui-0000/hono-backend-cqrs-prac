@@ -56,6 +56,18 @@ namespace BackendApi {
       | UnauthorizedErrorResponse
       | NotFoundErrorResponse
       | InternalServerErrorResponse;
+
+    /** パスワードを変更する (要認証。現在のパスワードで本人確認する) */
+    @put
+    @route("/{id}/password")
+    @useAuth(BearerAuth)
+    @operationId("changePassword")
+    op changePassword(@path id: UserId, @body body: ChangePasswordRequest):
+      | SuccessNoContentResponse
+      | BadRequestErrorResponse
+      | UnauthorizedErrorResponse
+      | NotFoundErrorResponse
+      | InternalServerErrorResponse;
   }
 
   @tag("Auth")
