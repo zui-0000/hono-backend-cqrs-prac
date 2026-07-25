@@ -1,0 +1,281 @@
+openapi: 3.1.0
+info:
+  title: Backend API
+  version: 0.0.0
+tags:
+  - name: Users
+paths:
+  /users:
+    post:
+      operationId: createUser
+      description: ユーザーを新規作成する
+      parameters: []
+      responses:
+        '201':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+        '400':
+          description: リクエスト内容が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+  /users/{id}:
+    get:
+      operationId: getUser
+      description: IDを指定してユーザーを取得する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserResponse'
+        '404':
+          description: リソースが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceNotFoundException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Users
+    put:
+      operationId: updateUser
+      description: ユーザーを更新する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '204':
+          description: 成功
+        '400':
+          description: リクエスト内容が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestException'
+        '404':
+          description: リソースが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceNotFoundException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+    delete:
+      operationId: deleteUser
+      description: ユーザーを削除する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/UserId'
+      responses:
+        '204':
+          description: 成功
+        '404':
+          description: リソースが見つからない
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResourceNotFoundException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Users
+components:
+  schemas:
+    BadRequestException:
+      type: object
+      required:
+        - errorCode
+        - message
+        - meta
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          $ref: '#/components/schemas/ErrorMessage'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ErrorDetail'
+      description: リクエスト内容が不正
+      title: BadRequestException
+      examples:
+        - errorCode: '4000'
+          message: BadRequestException
+          meta:
+            respondedAt: '2025-01-01T12:00:00Z'
+          details:
+            - field: email
+              message: メールアドレスの形式が不正です
+    CommonResponseMeta:
+      type: object
+      required:
+        - respondedAt
+      properties:
+        respondedAt:
+          $ref: '#/components/schemas/RespondedAt'
+      title: CommonResponseMeta
+    CreateUserRequest:
+      type: object
+      required:
+        - name
+        - mailAddress
+      properties:
+        name:
+          $ref: '#/components/schemas/UserName'
+        mailAddress:
+          $ref: '#/components/schemas/MailAddress'
+      title: CreateUserRequest
+    CreateUserResponse:
+      type: object
+      required:
+        - meta
+      properties:
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      title: CreateUserResponse
+    ErrorCode:
+      type: string
+      description: エラーコード
+      title: ErrorCode
+      examples:
+        - '4000'
+    ErrorDetail:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+      description: バリデーションエラーの詳細
+      title: ErrorDetail
+    ErrorMessage:
+      type: string
+      description: エラーメッセージ
+      title: ErrorMessage
+      examples:
+        - BadRequestException
+    GetUserResponse:
+      type: object
+      required:
+        - result
+        - meta
+      properties:
+        result:
+          $ref: '#/components/schemas/GetUserResult'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      title: GetUserResponse
+    GetUserResult:
+      type: object
+      required:
+        - name
+        - mailAddress
+      properties:
+        name:
+          $ref: '#/components/schemas/UserName'
+        mailAddress:
+          $ref: '#/components/schemas/MailAddress'
+      title: GetUserResult
+    MailAddress:
+      type: string
+      maxLength: 255
+      pattern: ^[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?$
+      description: メールアドレス (RFC 5322準拠)
+      title: MailAddress
+      examples:
+        - user@example.com
+    ResourceNotFoundException:
+      type: object
+      required:
+        - errorCode
+        - message
+        - meta
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          $ref: '#/components/schemas/ErrorMessage'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      description: リソースが存在しない
+      title: ResourceNotFoundException
+      examples:
+        - errorCode: '4040'
+          message: ResourceNotFoundException
+          meta:
+            respondedAt: '2025-01-01T12:00:00Z'
+    RespondedAt:
+      type: string
+      format: date-time
+      description: レスポンス日時 (RFC 3339 / ISO 8601, PostgreSQL TIMESTAMPTZ互換)
+      title: RespondedAt
+      examples:
+        - '2025-01-01T12:00:00Z'
+    UpdateUserRequest:
+      type: object
+      required:
+        - name
+        - mailAddress
+      properties:
+        name:
+          $ref: '#/components/schemas/UserName'
+        mailAddress:
+          $ref: '#/components/schemas/MailAddress'
+      title: UpdateUserRequest
+    UserId:
+      type: string
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      description: ユーザーID (UUID v7)
+      title: UserId
+      examples:
+        - 018eef15-1234-7123-8123-123456789abc
+    UserName:
+      type: string
+      minLength: 1
+      maxLength: 100
+      description: ユーザー名
+      title: UserName
+      examples:
+        - 山田太郎

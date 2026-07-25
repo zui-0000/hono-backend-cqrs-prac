@@ -1,0 +1,10 @@
+kind: project
+entrypoint: main.tsp
+emit:
+  - "@typespec/openapi3"
+options:
+  "@typespec/openapi3":
+    emitter-output-dir: "{cwd}/dist"
+    output-file: "backend-openapi.yaml"
+    openapi-versions:
+      - "3.1.0"

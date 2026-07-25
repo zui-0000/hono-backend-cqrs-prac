@@ -1,9 +1,9 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
-build/
+# Build output (リポジトリ直下のみ。schema/dist 等サブプロジェクトの生成物は各自で管理)
+/dist/
+/build/
 
 # Logs
 *.log
