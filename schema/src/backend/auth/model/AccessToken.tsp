@@ -5,4 +5,5 @@
 @maxLength(2048)
 // NOTE: JWT全体の厳密な検証は難しいため、3セグメント形式だけ軽く保証する
 @pattern("^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$")
+@secret
 scalar AccessToken extends string;

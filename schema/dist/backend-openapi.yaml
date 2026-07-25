@@ -4,7 +4,96 @@ info:
   version: 0.0.0
 tags:
   - name: Users
+  - name: Auth
 paths:
+  /auth/login:
+    post:
+      operationId: login
+      description: ログイン (メール・パスワードでトークンを発行する。認証不要)
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: リクエスト内容が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestException'
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+  /auth/logout:
+    post:
+      operationId: logout
+      description: ログアウト (要認証。リフレッシュトークンを失効させる)
+      parameters: []
+      responses:
+        '204':
+          description: 成功
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+  /auth/refresh:
+    post:
+      operationId: refresh
+      description: アクセストークンを再発行する (リフレッシュトークンを使用。認証不要)
+      parameters: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+        '400':
+          description: リクエスト内容が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestException'
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
+        '500':
+          description: サーバーエラー
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
   /users:
     post:
       operationId: createUser
@@ -66,6 +155,8 @@ paths:
           description: サーバーエラー
       tags:
         - Users
+      security:
+        - BearerAuth: []
     put:
       operationId: updateUser
       description: ユーザーを更新する (要認証)
@@ -106,6 +197,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/UpdateUserRequest'
+      security:
+        - BearerAuth: []
     delete:
       operationId: deleteUser
       description: ユーザーを削除する (要認証)
@@ -134,8 +227,20 @@ paths:
           description: サーバーエラー
       tags:
         - Users
+      security:
+        - BearerAuth: []
 components:
   schemas:
+    AccessToken:
+      type: string
+      minLength: 20
+      maxLength: 2048
+      pattern: ^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$
+      format: password
+      description: アクセストークン(JWT想定)。認可に使用する。
+      title: AccessToken
+      examples:
+        - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIiwiaWF0IjoxNzM1NzE4NDAwfQ.srCq5l7u2mKq8eM4X4g5wqVd5J9Jw7V0q1c2d3e4f5g
     BadRequestException:
       type: object
       required:
@@ -176,11 +281,14 @@ components:
       required:
         - name
         - mailAddress
+        - password
       properties:
         name:
           $ref: '#/components/schemas/UserName'
         mailAddress:
           $ref: '#/components/schemas/MailAddress'
+        password:
+          $ref: '#/components/schemas/Password'
       title: CreateUserRequest
     CreateUserResponse:
       type: object
@@ -236,6 +344,39 @@ components:
         mailAddress:
           $ref: '#/components/schemas/MailAddress'
       title: GetUserResult
+    LoginRequest:
+      type: object
+      required:
+        - mailAddress
+        - password
+      properties:
+        mailAddress:
+          $ref: '#/components/schemas/MailAddress'
+        password:
+          $ref: '#/components/schemas/Password'
+      title: LoginRequest
+    LoginResponse:
+      type: object
+      required:
+        - result
+        - meta
+      properties:
+        result:
+          $ref: '#/components/schemas/LoginResult'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      title: LoginResponse
+    LoginResult:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          $ref: '#/components/schemas/AccessToken'
+        refreshToken:
+          $ref: '#/components/schemas/RefreshToken'
+      title: LoginResult
     MailAddress:
       type: string
       maxLength: 255
@@ -244,6 +385,51 @@ components:
       title: MailAddress
       examples:
         - user@example.com
+    Password:
+      type: string
+      minLength: 12
+      maxLength: 128
+      format: password
+      description: パスワード(平文)。入力専用で、レスポンスに含めないこと。
+      title: Password
+      examples:
+        - '************'
+    RefreshRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          $ref: '#/components/schemas/RefreshToken'
+      title: RefreshRequest
+    RefreshResponse:
+      type: object
+      required:
+        - result
+        - meta
+      properties:
+        result:
+          $ref: '#/components/schemas/RefreshResult'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      title: RefreshResponse
+    RefreshResult:
+      type: object
+      required:
+        - accessToken
+      properties:
+        accessToken:
+          $ref: '#/components/schemas/AccessToken'
+      title: RefreshResult
+    RefreshToken:
+      type: string
+      minLength: 20
+      maxLength: 2048
+      format: password
+      description: リフレッシュトークン(不透明トークン想定)。アクセストークン再発行に使用する。
+      title: RefreshToken
+      examples:
+        - rt_2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f
     ResourceNotFoundException:
       type: object
       required:
@@ -317,3 +503,7 @@ components:
       title: UserName
       examples:
         - 山田太郎
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: Bearer

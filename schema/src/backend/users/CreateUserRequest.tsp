@@ -5,4 +5,5 @@ import "../../shared/model/index.tsp";
 model CreateUserRequest {
   name: UserName;
   mailAddress: MailAddress;
+  password: Password;
 }

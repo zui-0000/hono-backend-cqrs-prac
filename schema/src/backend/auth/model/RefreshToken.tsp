@@ -4,4 +4,5 @@
 @minLength(20)
 @maxLength(2048)
 // NOTE: 実装都合で形式を変えられるよう、JWTのような強い制約は付けない
+@secret
 scalar RefreshToken extends string;
