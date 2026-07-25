@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // デフォルトで有効なプラグイン。
+  //   typescript = TS 特有ルール / unicorn = モダン JS の慣習 / oxc = Oxc 独自ルール
+  "plugins": ["typescript", "unicorn", "oxc"],
+  // カテゴリ単位で一括設定。correctness = "明確に間違い/無意味なコード" のみ error。
+  // まずは誤検知の少ない最小構成。厳しくするなら suspicious / perf / style を "warn" で追加。
+  "categories": {
+    "correctness": "error",
+  },
+  // 個別ルールの上書きはここに書く (例: "no-console": "error")。
+  "rules": {},
+  // builtin グローバル (console, URL 等) を認識させる。
+  "env": {
+    "builtin": true,
+  },
+}

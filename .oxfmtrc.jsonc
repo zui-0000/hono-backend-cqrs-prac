@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  // Prettier 互換のデフォルト整形 (2スペース / 80幅 / セミコロン / ダブルクォート) で運用。
+  // .gitignore と .prettierignore は自動で尊重されるため、追加で除外したいものだけここに書く。
+  "ignorePatterns": [],
+}

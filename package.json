@@ -5,14 +5,20 @@
   "scripts": {
     "dev": "bun run --hot src/main.ts",
     "start": "bun run src/main.ts",
-    "typecheck": "tsc --noEmit",
-    "check:updates": "pnpm outdated --recursive --long"
+    "check:types": "tsc --noEmit",
+    "check:lint": "oxlint -c .oxlintrc.jsonc",
+    "check:updates": "pnpm outdated --recursive --long",
+    "format:check": "oxfmt -c .oxfmtrc.jsonc --check",
+    "format:fix": "oxfmt -c .oxfmtrc.jsonc",
+    "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types"
   },
   "dependencies": {
     "hono": "^4.12.32"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
     "typescript": "^7.0.2"
   }
 }
