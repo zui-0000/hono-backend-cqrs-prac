@@ -8,7 +8,7 @@ paths:
   /users:
     post:
       operationId: createUser
-      description: ユーザーを新規作成する
+      description: ユーザーを新規作成する (サインアップ想定のため認証不要)
       parameters: []
       responses:
         '201':
@@ -36,7 +36,7 @@ paths:
   /users/{id}:
     get:
       operationId: getUser
-      description: IDを指定してユーザーを取得する
+      description: IDを指定してユーザーを取得する (要認証)
       parameters:
         - name: id
           in: path
@@ -50,6 +50,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetUserResponse'
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
         '404':
           description: リソースが見つからない
           content:
@@ -62,7 +68,7 @@ paths:
         - Users
     put:
       operationId: updateUser
-      description: ユーザーを更新する
+      description: ユーザーを更新する (要認証)
       parameters:
         - name: id
           in: path
@@ -78,6 +84,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BadRequestException'
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
         '404':
           description: リソースが見つからない
           content:
@@ -96,7 +108,7 @@ paths:
               $ref: '#/components/schemas/UpdateUserRequest'
     delete:
       operationId: deleteUser
-      description: ユーザーを削除する
+      description: ユーザーを削除する (要認証)
       parameters:
         - name: id
           in: path
@@ -106,6 +118,12 @@ paths:
       responses:
         '204':
           description: 成功
+        '401':
+          description: 認証情報が不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedException'
         '404':
           description: リソースが見つからない
           content:
@@ -253,6 +271,26 @@ components:
       title: RespondedAt
       examples:
         - '2025-01-01T12:00:00Z'
+    UnauthorizedException:
+      type: object
+      required:
+        - errorCode
+        - message
+        - meta
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          $ref: '#/components/schemas/ErrorMessage'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      description: 認証情報が不正
+      title: UnauthorizedException
+      examples:
+        - errorCode: '4010'
+          message: UnauthorizedException
+          meta:
+            respondedAt: '2025-01-01T12:00:00Z'
     UpdateUserRequest:
       type: object
       required:
