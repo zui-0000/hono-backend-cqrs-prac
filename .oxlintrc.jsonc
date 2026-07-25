@@ -14,4 +14,6 @@
   "env": {
     "builtin": true,
   },
+  // orval が生成するコードは lint 対象外 (手で編集しないため)。
+  "ignorePatterns": ["src/generated/"],
 }

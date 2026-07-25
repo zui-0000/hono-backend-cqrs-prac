@@ -11,6 +11,8 @@
     "format:check": "oxfmt -c .oxfmtrc.jsonc --check",
     "format:fix": "oxfmt -c .oxfmtrc.jsonc",
     "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types",
+    "generate:api": "orval",
+    "prepare": "pnpm generate:api",
     "db:up": "docker compose up -d",
     "db:stop": "docker compose stop",
     "db:generate": "drizzle-kit generate --config ./src/shared/db/drizzle.config.ts",
@@ -18,13 +20,16 @@
     "db:studio": "drizzle-kit studio --config ./src/shared/db/drizzle.config.ts"
   },
   "dependencies": {
+    "@hono/zod-validator": "^0.9.0",
     "drizzle-orm": "^0.45.2",
-    "hono": "^4.12.32"
+    "hono": "^4.12.32",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/bun": "^1.3.14",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
+    "orval": "^8.22.0",
     "oxfmt": "^0.60.0",
     "oxlint": "^1.75.0",
     "postgres": "^3.4.9",

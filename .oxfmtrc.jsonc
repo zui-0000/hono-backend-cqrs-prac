@@ -4,5 +4,6 @@
   // .gitignore と .prettierignore は自動で尊重されるため、追加で除外したいものだけここに書く。
   // drizzle-kit が生成するマイグレーション (SQL / meta JSON) は整形対象外にする。
   // schema/ は独立した TypeSpec プロジェクト (tsp format を持つ) のため丸ごと除外する。
+  // (src/generated は .gitignore 済み。orval の afterAllFilesWrite で個別に整形するのでここには含めない)
   "ignorePatterns": ["src/shared/db/migrations/", "schema/"],
 }

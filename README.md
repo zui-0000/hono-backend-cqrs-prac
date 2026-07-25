@@ -13,6 +13,8 @@ Hono + CQRS + DDD を学習するためのバックエンド（Bun ランタイ�
 | DB                 | PostgreSQL 18（Docker）                    |
 | ORM                | Drizzle（`bun-sql` ドライバ）              |
 | Lint / Format      | oxlint / oxfmt                             |
+| API スキーマ       | TypeSpec（OpenAPI 3.1 を生成）             |
+| バリデーション     | zod（orval で OpenAPI から生成）           |
 | 言語               | TypeScript                                 |
 
 ## 前提
@@ -53,24 +55,37 @@ pnpm dev
 
 ## スクリプト
 
-| script                           | 内容                                      |
-| -------------------------------- | ----------------------------------------- |
-| `pnpm dev`                       | 開発サーバ（ホットリロード）              |
-| `pnpm start`                     | 通常起動                                  |
-| `pnpm check:types`               | 型チェック（`tsc --noEmit`）              |
-| `pnpm check:lint`                | oxlint                                    |
-| `pnpm check:updates`             | 依存の更新確認                            |
-| `pnpm format:check`              | 整形チェック（oxfmt）                     |
-| `pnpm format:fix`                | 整形適用                                  |
-| `pnpm lint:fix`                  | lint 自動修正 → 整形 → 型チェック（一括） |
-| `pnpm db:up` / `db:stop`         | 開発用 Postgres の起動 / 停止             |
-| `pnpm db:generate --name <name>` | マイグレーション生成（TS スキーマ → SQL） |
-| `pnpm db:migrate`                | マイグレーション適用                      |
-| `pnpm db:studio`                 | Drizzle Studio（GUI）                     |
+| script                           | 内容                                                    |
+| -------------------------------- | ------------------------------------------------------- |
+| `pnpm dev`                       | 開発サーバ（ホットリロード）                            |
+| `pnpm start`                     | 通常起動                                                |
+| `pnpm check:types`               | 型チェック（`tsc --noEmit`）                            |
+| `pnpm check:lint`                | oxlint                                                  |
+| `pnpm check:updates`             | 依存の更新確認                                          |
+| `pnpm format:check`              | 整形チェック（oxfmt）                                   |
+| `pnpm format:fix`                | 整形適用                                                |
+| `pnpm lint:fix`                  | lint 自動修正 → 整形 → 型チェック（一括）               |
+| `pnpm generate:api`              | OpenAPI から zod スキーマを生成（orval, src/generated） |
+| `pnpm db:up` / `db:stop`         | 開発用 Postgres の起動 / 停止                           |
+| `pnpm db:generate --name <name>` | マイグレーション生成（TS スキーマ → SQL）               |
+| `pnpm db:migrate`                | マイグレーション適用                                    |
+| `pnpm db:studio`                 | Drizzle Studio（GUI）                                   |
+
+### スキーマ（TypeSpec / `schema/` 別プロジェクト）
+
+`schema/` は API 契約を TypeSpec で定義する独立プロジェクト。
+
+| script                  | 内容                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| `pnpm -C schema build`  | `.tsp` → OpenAPI（`schema/dist/backend-openapi.yaml`）を生成 |
+| `pnpm -C schema format` | `.tsp` を整形                                                |
+
+スキーマ変更後は **`pnpm -C schema build` → `pnpm generate:api`** の順で zod まで反映する。
 
 ## ディレクトリ構成
 
 ```text
+schema/                 # TypeSpec による API 契約（独立プロジェクト, OpenAPI 3.1 出力）
 src/
 ├─ main.ts              # エントリ（Hono + Bun）
 ├─ features/            # bounded context 単位（package by feature）
@@ -79,8 +94,9 @@ src/
 │     ├─ application/   #     command / query（CQRS）
 │     ├─ infrastructure/#     リポジトリ実装（domain ↔ DB 変換）
 │     └─ presentation/  #     Hono ルーター
-└─ shared/
-   └─ db/               # Drizzle クライアント / スキーマ / マイグレーション
+├─ shared/
+│  └─ db/               # Drizzle クライアント / スキーマ / マイグレーション
+└─ generated/           # orval が OpenAPI から生成する zod（gitignore, prepare で再生成）
 docs/                   # 設計と学びの記録
 ```
 

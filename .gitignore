@@ -5,6 +5,9 @@ node_modules/
 /dist/
 /build/
 
+# orval が OpenAPI から生成する zod コード (契約から prepare で再生成するため追跡しない)
+/src/generated/
+
 # Logs
 *.log
 logs/
