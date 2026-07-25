@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm run format && run-s \"build:*\"",
+    "build": "pnpm run format && pnpm run build:backend",
     "build:backend": "tsp compile src/backend",
     "format": "tsp format .",
     "check:updates": "pnpm outdated --recursive --long"
@@ -12,7 +12,6 @@
     "@typespec/compiler": "^1.14.0",
     "@typespec/http": "^1.14.0",
     "@typespec/openapi": "^1.14.0",
-    "@typespec/openapi3": "^1.14.0",
-    "npm-run-all2": "^9.0.2"
+    "@typespec/openapi3": "^1.14.0"
   }
 }
