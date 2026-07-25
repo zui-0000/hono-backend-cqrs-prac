@@ -1,14 +1,16 @@
 import "@typespec/http";
 import "@typespec/openapi";
 import "@typespec/openapi3";
-import "./users/index.tsp";
-import "./auth/index.tsp";
-import "../shared/index.tsp";
+import "./features/users/index.tsp";
+import "./features/auth/index.tsp";
+import "./shared/index.tsp";
 
 using TypeSpec.Http;
 using TypeSpec.OpenAPI;
 
-@service(#{ title: "Backend API" })
+/** hono-cqrs-prac のバックエンド API (users / auth) */
+@service(#{ title: "hono-cqrs-prac backend API" })
+@info(#{ version: "0.1.0" })
 namespace BackendApi {
   @tag("Users")
   @route("/users")

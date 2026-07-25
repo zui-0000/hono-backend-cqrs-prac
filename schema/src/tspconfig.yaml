@@ -5,6 +5,6 @@ emit:
 options:
   "@typespec/openapi3":
     emitter-output-dir: "{cwd}/dist"
-    output-file: "backend-openapi.yaml"
+    output-file: "openapi.yaml"
     openapi-versions:
       - "3.1.0"

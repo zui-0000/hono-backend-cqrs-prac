@@ -3,8 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "pnpm run format && pnpm run build:backend",
-    "build:backend": "tsp compile src/backend",
+    "build": "pnpm run format && tsp compile src",
     "format": "tsp format .",
     "check:updates": "pnpm outdated --recursive --long"
   },

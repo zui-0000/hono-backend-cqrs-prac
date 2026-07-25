@@ -8,7 +8,7 @@ import { defineConfig } from "orval";
 export default defineConfig({
   backend: {
     input: {
-      target: "./schema/dist/backend-openapi.yaml",
+      target: "./schema/dist/openapi.yaml",
     },
     output: {
       client: "zod",

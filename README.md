@@ -75,10 +75,10 @@ pnpm dev
 
 `schema/` は API 契約を TypeSpec で定義する独立プロジェクト。
 
-| script                  | 内容                                                         |
-| ----------------------- | ------------------------------------------------------------ |
-| `pnpm -C schema build`  | `.tsp` → OpenAPI（`schema/dist/backend-openapi.yaml`）を生成 |
-| `pnpm -C schema format` | `.tsp` を整形                                                |
+| script                  | 内容                                                 |
+| ----------------------- | ---------------------------------------------------- |
+| `pnpm -C schema build`  | `.tsp` → OpenAPI（`schema/dist/openapi.yaml`）を生成 |
+| `pnpm -C schema format` | `.tsp` を整形                                        |
 
 スキーマ変更後は **`pnpm -C schema build` → `pnpm generate:api`** の順で zod まで反映する。
 
