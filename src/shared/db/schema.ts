@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
 // 識別子はアプリ側 (ドメインの生成ファクトリ) で Bun.randomUUIDv7() を採番する。
 // 集約が生成時点で identity を持つ DDD 王道の戦略のため、DB 側の DEFAULT は付けない。
@@ -7,6 +7,8 @@ export const tUser = pgTable("t_user", {
   name: varchar("name", { length: 100 }).notNull(),
   // ログインの識別子になるため一意制約を付ける。文字数上限は RFC 5321 の実質上限 254 に収まる 255。
   mailAddress: varchar("mail_address", { length: 255 }).notNull().unique(),
+  // パスワードのハッシュ (argon2id)。平文は保存しない。ハッシュ化はアプリ層 (Bun.password) が行う。
+  hashedPassword: text("hashed_password").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

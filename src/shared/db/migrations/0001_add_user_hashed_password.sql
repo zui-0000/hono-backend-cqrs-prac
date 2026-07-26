@@ -1,0 +1,1 @@
+ALTER TABLE "t_user" ADD COLUMN "hashed_password" text NOT NULL;
