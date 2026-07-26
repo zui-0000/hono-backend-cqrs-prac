@@ -11,7 +11,8 @@ paths:
     post:
       operationId: login
       description: ログイン (メール・パスワードでトークンを発行する。認証不要)
-      parameters: []
+      parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
       responses:
         '200':
           description: 成功
@@ -49,10 +50,17 @@ paths:
     post:
       operationId: logout
       description: ログアウト (要認証。リフレッシュトークンを失効させる)
-      parameters: []
+      parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
       responses:
         '204':
           description: 成功
+        '400':
+          description: リクエスト内容が不正 (汎用)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
         '401':
           description: 認証情報が不正 (汎用)
           content:
@@ -73,7 +81,8 @@ paths:
     post:
       operationId: refresh
       description: アクセストークンを再発行する (リフレッシュトークンを使用。認証不要)
-      parameters: []
+      parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
       responses:
         '200':
           description: 成功
@@ -111,7 +120,8 @@ paths:
     post:
       operationId: createUser
       description: ユーザーを新規作成する (サインアップ想定のため認証不要)
-      parameters: []
+      parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
       responses:
         '201':
           description: 成功
@@ -150,6 +160,7 @@ paths:
       operationId: getUser
       description: IDを指定してユーザーを取得する (要認証)
       parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
         - name: id
           in: path
           required: true
@@ -162,6 +173,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetUserResponse'
+        '400':
+          description: リクエスト内容が不正 (汎用)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
         '401':
           description: 認証情報が不正 (汎用)
           content:
@@ -188,6 +205,7 @@ paths:
       operationId: updateUser
       description: ユーザーを更新する (要認証)
       parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
         - name: id
           in: path
           required: true
@@ -234,6 +252,7 @@ paths:
       operationId: deleteUser
       description: ユーザーを削除する (要認証)
       parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
         - name: id
           in: path
           required: true
@@ -242,6 +261,12 @@ paths:
       responses:
         '204':
           description: 成功
+        '400':
+          description: リクエスト内容が不正 (汎用)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestError'
         '401':
           description: 認証情報が不正 (汎用)
           content:
@@ -269,6 +294,7 @@ paths:
       operationId: changePassword
       description: パスワードを変更する (要認証。現在のパスワードで本人確認する)
       parameters:
+        - $ref: '#/components/parameters/CommonHeaders'
         - name: id
           in: path
           required: true
@@ -312,6 +338,14 @@ paths:
       security:
         - BearerAuth: []
 components:
+  parameters:
+    CommonHeaders:
+      name: X-Request-Id
+      in: header
+      required: true
+      description: リクエストの相関ID。クライアントが UUID v7 で採番して必ず送る
+      schema:
+        $ref: '#/components/schemas/RequestId'
   schemas:
     AccessToken:
       type: string
@@ -563,6 +597,13 @@ components:
       title: RefreshToken
       examples:
         - rt_2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f
+    RequestId:
+      type: string
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      description: リクエストの相関ID (UUID v7)。クライアントが採番し、サーバーのログと突き合わせて追跡する
+      title: RequestId
+      examples:
+        - 018eef15-1234-7123-8123-123456789abc
     ResourceNotFoundError:
       type: object
       required:

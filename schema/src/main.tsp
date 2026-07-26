@@ -18,7 +18,7 @@ namespace BackendApi {
     /** ユーザーを新規作成する (サインアップ想定のため認証不要) */
     @post
     @operationId("createUser")
-    op create(@body body: CreateUserRequest):
+    op create(...CommonHeaders, @body body: CreateUserRequest):
       | SuccessCreatedResponse<CreateUserResponse>
       | BadRequestErrorResponse
       | MailAddressAlreadyExistsErrorResponse
@@ -29,8 +29,9 @@ namespace BackendApi {
     @route("/{id}")
     @useAuth(BearerAuth)
     @operationId("getUser")
-    op get(@path id: UserId):
+    op get(...CommonHeaders, @path id: UserId):
       | SuccessOkResponse<GetUserResponse>
+      | BadRequestErrorResponse
       | UnauthorizedErrorResponse
       | NotFoundErrorResponse
       | InternalServerErrorResponse;
@@ -40,7 +41,11 @@ namespace BackendApi {
     @route("/{id}")
     @useAuth(BearerAuth)
     @operationId("updateUser")
-    op update(@path id: UserId, @body body: UpdateUserRequest):
+    op update(
+      ...CommonHeaders,
+      @path id: UserId,
+      @body body: UpdateUserRequest,
+    ):
       | SuccessNoContentResponse
       | BadRequestErrorResponse
       | UnauthorizedErrorResponse
@@ -52,8 +57,9 @@ namespace BackendApi {
     @route("/{id}")
     @useAuth(BearerAuth)
     @operationId("deleteUser")
-    op delete(@path id: UserId):
+    op delete(...CommonHeaders, @path id: UserId):
       | SuccessNoContentResponse
+      | BadRequestErrorResponse
       | UnauthorizedErrorResponse
       | NotFoundErrorResponse
       | InternalServerErrorResponse;
@@ -63,7 +69,11 @@ namespace BackendApi {
     @route("/{id}/password")
     @useAuth(BearerAuth)
     @operationId("changePassword")
-    op changePassword(@path id: UserId, @body body: ChangePasswordRequest):
+    op changePassword(
+      ...CommonHeaders,
+      @path id: UserId,
+      @body body: ChangePasswordRequest,
+    ):
       | SuccessNoContentResponse
       | BadRequestErrorResponse
       | UnauthorizedErrorResponse
@@ -78,7 +88,7 @@ namespace BackendApi {
     @post
     @route("/login")
     @operationId("login")
-    op login(@body body: LoginRequest):
+    op login(...CommonHeaders, @body body: LoginRequest):
       | SuccessOkResponse<LoginResponse>
       | BadRequestErrorResponse
       | UnauthorizedErrorResponse
@@ -89,8 +99,9 @@ namespace BackendApi {
     @route("/logout")
     @useAuth(BearerAuth)
     @operationId("logout")
-    op logout():
+    op logout(...CommonHeaders):
       | SuccessNoContentResponse
+      | BadRequestErrorResponse
       | UnauthorizedErrorResponse
       | InternalServerErrorResponse;
 
@@ -98,7 +109,7 @@ namespace BackendApi {
     @post
     @route("/refresh")
     @operationId("refresh")
-    op refresh(@body body: RefreshRequest):
+    op refresh(...CommonHeaders, @body body: RefreshRequest):
       | SuccessOkResponse<RefreshResponse>
       | BadRequestErrorResponse
       | UnauthorizedErrorResponse
