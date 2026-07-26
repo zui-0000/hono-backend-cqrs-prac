@@ -1,5 +1,5 @@
 import { Effect, Option, Schema } from "effect";
-import type { MailAddress } from "~/shared/domain/mail-address";
+import { MailAddress } from "~/shared/domain/mail-address";
 import {
   MailAddressAlreadyExistsError,
   type RepositoryError,
@@ -9,15 +9,17 @@ import type { UuidGenerator } from "~/shared/service/uuid-generator";
 import * as User from "../domain";
 
 /**
- * ユーザー新規作成コマンドの入力。
- * 検証済みの値オブジェクトのみを受け取る (生値の decode は presentation 層の責務)。
- * このため本コマンドの失敗は「ビジネス上の失敗」だけになる。
+ * ユーザー新規作成コマンドの入力スキーマ。
+ * 値オブジェクトのスキーマを組み合わせて構成しているため、
+ * 呼び出し側は生の入力を一度 decode するだけで検証済みの値が得られる
+ * (フィールドごとの詰め替えが不要になる)。
  */
-export type CreateUserInput = {
-  readonly name: User.Name;
-  readonly mailAddress: MailAddress;
-  readonly password: User.Password;
-};
+export const CreateUserCommandInput = Schema.Struct({
+  name: User.Name,
+  mailAddress: MailAddress,
+  password: User.Password,
+});
+export type CreateUserCommandInput = typeof CreateUserCommandInput.Type;
 
 /**
  * ユーザーを新規作成する (CQRS のコマンド)。
@@ -28,27 +30,31 @@ export type CreateUserInput = {
  * 4. リポジトリへ永続化
  *
  * 失敗 (E) と依存 (R) がすべて型に現れる = throw を使わない。
+ * 状態を変えるだけで値は返さない (CQRS のコマンド)。API 契約上も
+ * 作成したユーザーの情報は応答に含めないため、集約を外に出す必要がない。
  */
-export const createUser = (
-  input: CreateUserInput,
+export const createUserCommand = (
+  input: CreateUserCommandInput,
 ): Effect.Effect<
-  User.User,
+  void,
   MailAddressAlreadyExistsError | RepositoryError,
   User.Repository | PasswordHasher | UuidGenerator
 > =>
   Effect.gen(function* () {
-    const repository = yield* User.Repository;
+    const userRepository = yield* User.Repository;
     const passwordHasher = yield* PasswordHasher;
 
-    const existing = yield* repository.findByMailAddress(input.mailAddress);
+    // メアド重複チェック
+    const existing = yield* userRepository.findByMailAddress(input.mailAddress);
     if (Option.isSome(existing)) {
       return yield* new MailAddressAlreadyExistsError({
         mailAddress: input.mailAddress,
       });
     }
 
-    const rawHash = yield* passwordHasher.hash(input.password);
+    // パスワードハッシュ化
     // ハッシュ化の結果は必ず妥当な HashedPassword なので decode 失敗は defect 扱い。
+    const rawHash = yield* passwordHasher.hash(input.password);
     const hashedPassword = yield* Schema.decode(User.HashedPassword)(
       rawHash,
     ).pipe(Effect.orDie);
@@ -59,6 +65,5 @@ export const createUser = (
       hashedPassword,
     });
 
-    yield* repository.create(user);
-    return user;
+    yield* userRepository.create(user);
   });

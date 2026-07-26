@@ -8,7 +8,7 @@ import { MailAddress } from "~/shared/domain/mail-address";
 import { MailAddressAlreadyExistsError, RepositoryError } from "~/shared/error";
 
 /** DB 行 → User 集約への復元。DB の値は既に妥当な前提のため decode 失敗は defect 扱い。 */
-const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User.User> =>
+const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User.Model> =>
   Effect.gen(function* () {
     const id = yield* Schema.decode(User.Id)(row.id);
     const name = yield* Schema.decode(User.Name)(row.name);
@@ -46,7 +46,7 @@ const MAIL_ADDRESS_UNIQUE_CONSTRAINT = "t_user_mail_address_unique";
  * 「最後の砦」の経路。それ以外の失敗は RepositoryError (500) のまま。
  */
 const write = (
-  user: User.User,
+  user: User.Model,
   operation: () => Promise<unknown>,
 ): Effect.Effect<void, MailAddressAlreadyExistsError | RepositoryError> =>
   Effect.tryPromise({
@@ -67,7 +67,7 @@ const write = (
  */
 const toDomainHead = (
   rows: readonly (typeof tUser.$inferSelect)[],
-): Effect.Effect<Option.Option<User.User>> =>
+): Effect.Effect<Option.Option<User.Model>> =>
   Option.fromNullable(rows[0]).pipe(
     Option.map(toDomain),
     Effect.transposeOption,
