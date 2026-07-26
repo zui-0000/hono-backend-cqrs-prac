@@ -1,0 +1,33 @@
+{
+  "$schema": "https://raw.githubusercontent.com/streetsidesoftware/cspell/main/cspell.schema.json",
+  "version": "0.2",
+  "language": "en",
+  // プロジェクト固有・技術用語の辞書。綴りチェッカー (Code Spell Checker) の誤検知を抑える。
+  "words": [
+    // ドメイン/実装由来
+    "uuidv", // "uuidv7" が数字境界で "uuidv" に分割されるため
+    "uuidv7",
+    "millis", // Clock.currentTimeMillis 由来
+    "datetime",
+    "argon", // argon2id (Bun.password)
+    // ツール/ライブラリ名
+    "Bun",
+    "hono",
+    "drizzle",
+    "orval",
+    "oxlint",
+    "oxfmt",
+    "typespec",
+    "tspconfig",
+    "pnpm",
+    "mise",
+    "Redoc"
+  ],
+  // 綴りチェック対象外 (生成物・移行 SQL・ロックファイル)
+  "ignorePaths": [
+    "node_modules",
+    "src/generated",
+    "src/shared/db/migrations",
+    "pnpm-lock.yaml"
+  ]
+}
