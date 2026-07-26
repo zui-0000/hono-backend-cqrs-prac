@@ -8,14 +8,29 @@ Hono + CQRS + DDD を学習するためのバックエンド（Bun ランタイ�
 | ------------------ | ------------------------------------------ |
 | ランタイム         | Bun                                        |
 | Web フレームワーク | Hono                                       |
+| 関数型基盤         | Effect（Effect-TS）                        |
 | パッケージ管理     | pnpm                                       |
 | ツールチェーン管理 | mise（Bun / pnpm / Node のバージョン固定） |
 | DB                 | PostgreSQL 18（Docker）                    |
 | ORM                | Drizzle（`bun-sql` ドライバ）              |
 | Lint / Format      | oxlint / oxfmt                             |
 | API スキーマ       | TypeSpec（OpenAPI 3.1 を生成）             |
-| バリデーション     | zod（orval で OpenAPI から生成）           |
+| バリデーション     | Effect Schema（orval で OpenAPI から生成） |
 | 言語               | TypeScript                                 |
+
+### Effect（Effect-TS）について
+
+ドメインからプレゼンテーションまで [Effect](https://effect.website/) を全面採用し、関数型で実装している。
+
+- **値オブジェクト / モデル** — `Schema.brand` で名目型として表現し、集約は `Schema.Struct` +
+  純粋関数（イミュータブル）で構成する。
+- **エラー** — `Data.TaggedError` による型付きエラー。`throw` は使わず、失敗はすべて
+  `Effect<A, E, R>` の `E` に現れる。
+- **依存注入** — `Context.Tag` でポートを定義し、実装は `Layer` として注入する
+  （時刻は `Clock`、採番・ハッシュ化は自前のサービス）。副作用はサービス経由に隔離しており、
+  テストでは実装を差し替えて決定的に検証できる。
+- **境界** — API 契約（OpenAPI）から生成した Effect Schema でリクエスト / レスポンスを検証する。
+  ドメインと同じスキーマ体系のため、検証結果がそのまま Effect のエラーチャネルに乗る。
 
 ## 前提
 
@@ -50,25 +65,32 @@ pnpm db:migrate
 pnpm dev
 ```
 
-- `http://localhost:3000/` … `Hello Hono on Bun!`
-- `http://localhost:3000/health` … `{"status":"ok"}`
+- `GET /health` … `{"status":"ok"}`
+- `POST /users` … ユーザー作成（`X-Request-Id` ヘッダに UUID v7 が必須）
+
+```zsh
+curl -X POST http://localhost:3000/users \
+  -H "Content-Type: application/json" \
+  -H "X-Request-Id: $(bun -e 'console.log(Bun.randomUUIDv7())')" \
+  -d '{"name":"アスカ","mailAddress":"asuka@example.com","password":"SuperSecret123!"}'
+```
 
 ## スクリプト
 
-| script                           | 内容                                                    |
-| -------------------------------- | ------------------------------------------------------- |
-| `pnpm dev`                       | 開発サーバ（ホットリロード）                            |
-| `pnpm start`                     | 通常起動                                                |
-| `pnpm check:types`               | 型チェック（`tsc --noEmit`）                            |
-| `pnpm check:lint`                | oxlint                                                  |
-| `pnpm check:updates`             | 依存の更新確認                                          |
-| `pnpm format:check`              | 整形チェック（oxfmt）                                   |
-| `pnpm format:fix`                | 整形適用                                                |
-| `pnpm lint:fix`                  | lint 自動修正 → 整形 → 型チェック（一括）               |
-| `pnpm generate:api`              | OpenAPI から zod スキーマを生成（orval, src/generated） |
-| `pnpm db:generate --name <name>` | マイグレーション生成（TS スキーマ → SQL）               |
-| `pnpm db:migrate`                | マイグレーション適用                                    |
-| `pnpm db:studio`                 | Drizzle Studio（GUI）                                   |
+| script                           | 内容                                                      |
+| -------------------------------- | --------------------------------------------------------- |
+| `pnpm dev`                       | 開発サーバ（ホットリロード）                              |
+| `pnpm start`                     | 通常起動                                                  |
+| `pnpm check:types`               | 型チェック（`tsc --noEmit`）                              |
+| `pnpm check:lint`                | oxlint                                                    |
+| `pnpm check:updates`             | 依存の更新確認                                            |
+| `pnpm format:check`              | 整形チェック（oxfmt）                                     |
+| `pnpm format:fix`                | 整形適用                                                  |
+| `pnpm lint:fix`                  | lint 自動修正 → 整形 → 型チェック（一括）                 |
+| `pnpm generate:api`              | OpenAPI から Effect Schema を生成（orval, src/generated） |
+| `pnpm db:generate --name <name>` | マイグレーション生成（TS スキーマ → SQL）                 |
+| `pnpm db:migrate`                | マイグレーション適用                                      |
+| `pnpm db:studio`                 | Drizzle Studio（GUI）                                     |
 
 > DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose stop` を直接実行する（pnpm スクリプトにはしていない）。
 
@@ -81,7 +103,7 @@ pnpm dev
 | `pnpm -C schema build`  | `.tsp` → OpenAPI（`schema/dist/openapi.yaml`）を生成 |
 | `pnpm -C schema format` | `.tsp` を整形                                        |
 
-スキーマ変更後は **`pnpm -C schema build` → `pnpm generate:api`** の順で zod まで反映する。
+スキーマ変更後は **`pnpm -C schema build` → `pnpm generate:api`** の順で Effect Schema まで反映する。
 
 `pnpm -C schema preview` で生成した OpenAPI を Redoc（`http://localhost:8080`, 要 Docker）に表示できる。
 
@@ -90,21 +112,28 @@ pnpm dev
 ```text
 schema/                 # TypeSpec による API 契約（独立プロジェクト, OpenAPI 3.1 出力）
 src/
-├─ main.ts              # エントリ（Hono + Bun）
+├─ main.ts              # エントリ（Hono + Bun）。ルーティング定義
 ├─ features/            # bounded context 単位（package by feature）
 │  └─ <context>/        #   例: user
-│     ├─ domain/        #     集約 / 値オブジェクト / リポジトリ IF
+│     ├─ domain/        #     集約 / 値オブジェクト / リポジトリのポート
 │     ├─ application/   #     command / query（CQRS）
-│     ├─ infrastructure/#     リポジトリ実装（domain ↔ DB 変換）
-│     └─ presentation/  #     Hono ルーター
+│     ├─ infrastructure/#     リポジトリ実装（domain ↔ DB 変換, Layer）
+│     └─ presentation/  #     controller（HTTP ↔ Effect の境界）
 ├─ shared/
-│  └─ db/               # Drizzle クライアント / スキーマ / マイグレーション
-└─ generated/           # orval が OpenAPI から生成する zod（gitignore, prepare で再生成）
+│  ├─ domain/           # feature を跨ぐ値オブジェクト（Uuid / MailAddress / Password）
+│  ├─ error/            # API エラーカタログ（errorCode 体系と型付きエラー）
+│  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
+│  ├─ service/          # 横断サービス（時刻・採番・ハッシュ化）のポートと実装
+│  ├─ db/               # Drizzle クライアント / スキーマ / マイグレーション
+│  └─ runtime.ts        # Layer の組み立てと ManagedRuntime
+└─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）
 docs/                   # 設計と学びの記録
 ```
 
 - ドメインモデルは feature ごとに per-context で保持。テーブル定義（Drizzle スキーマ）は
   共有インフラとして `src/shared/db/schema.ts` に集約する。
+- ドメインの型・関数は bare 名で定義し、利用側は `import * as User from ".../user/domain"` の
+  namespace で参照する（`User.Model` / `User.Id` / `User.create`）。
 
 ## ドキュメント
 
