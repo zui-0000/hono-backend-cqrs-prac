@@ -1,28 +1,40 @@
 import "@typespec/http";
-import "../exception/index.tsp";
+import "../error/index.tsp";
 
 using TypeSpec.Http;
 
-/** リクエスト内容が不正 */
+/** リクエスト内容が不正 (汎用) */
 model BadRequestErrorResponse {
   @statusCode statusCode: 400;
-  @body error: BadRequestException;
+  @body error: BadRequestError;
 }
 
-/** 認証情報が不正 */
+/** 認証情報が不正 (汎用) */
 model UnauthorizedErrorResponse {
   @statusCode statusCode: 401;
-  @body error: UnauthorizedException;
+  @body error: UnauthorizedError;
 }
 
-/** リソースが見つからない */
+/** リソースが見つからない (汎用) */
 model NotFoundErrorResponse {
   @statusCode statusCode: 404;
-  @body error: ResourceNotFoundException;
+  @body error: ResourceNotFoundError;
 }
 
-/** サーバーエラー */
+/** リソースの現在の状態と衝突する (汎用) */
+model ConflictErrorResponse {
+  @statusCode statusCode: 409;
+  @body error: ConflictError;
+}
+
+/** メールアドレスが既に使用されている */
+model MailAddressAlreadyExistsErrorResponse {
+  @statusCode statusCode: 409;
+  @body error: MailAddressAlreadyExistsError;
+}
+
+/** サーバーエラー (汎用) */
 model InternalServerErrorResponse {
   @statusCode statusCode: 500;
-  @body error: InternalServerErrorException;
+  @body error: InternalServerError;
 }

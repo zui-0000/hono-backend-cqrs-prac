@@ -20,23 +20,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
         '400':
-          description: リクエスト内容が不正
+          description: リクエスト内容が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequestException'
+                $ref: '#/components/schemas/BadRequestError'
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Auth
       requestBody:
@@ -54,17 +54,17 @@ paths:
         '204':
           description: 成功
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Auth
       security:
@@ -82,23 +82,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/RefreshResponse'
         '400':
-          description: リクエスト内容が不正
+          description: リクエスト内容が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequestException'
+                $ref: '#/components/schemas/BadRequestError'
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Auth
       requestBody:
@@ -120,17 +120,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/CreateUserResponse'
         '400':
-          description: リクエスト内容が不正
+          description: リクエスト内容が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequestException'
+                $ref: '#/components/schemas/BadRequestError'
+        '409':
+          description: メールアドレスが既に使用されている
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailAddressAlreadyExistsError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
       requestBody:
@@ -157,23 +163,23 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetUserResponse'
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
-          description: リソースが見つからない
+          description: リソースが見つからない (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceNotFoundException'
+                $ref: '#/components/schemas/ResourceNotFoundError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
       security:
@@ -191,29 +197,29 @@ paths:
         '204':
           description: 成功
         '400':
-          description: リクエスト内容が不正
+          description: リクエスト内容が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequestException'
+                $ref: '#/components/schemas/BadRequestError'
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
-          description: リソースが見つからない
+          description: リソースが見つからない (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceNotFoundException'
+                $ref: '#/components/schemas/ResourceNotFoundError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
       requestBody:
@@ -237,23 +243,23 @@ paths:
         '204':
           description: 成功
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
-          description: リソースが見つからない
+          description: リソースが見つからない (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceNotFoundException'
+                $ref: '#/components/schemas/ResourceNotFoundError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
       security:
@@ -272,29 +278,29 @@ paths:
         '204':
           description: 成功
         '400':
-          description: リクエスト内容が不正
+          description: リクエスト内容が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BadRequestException'
+                $ref: '#/components/schemas/BadRequestError'
         '401':
-          description: 認証情報が不正
+          description: 認証情報が不正 (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UnauthorizedException'
+                $ref: '#/components/schemas/UnauthorizedError'
         '404':
-          description: リソースが見つからない
+          description: リソースが見つからない (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResourceNotFoundException'
+                $ref: '#/components/schemas/ResourceNotFoundError'
         '500':
-          description: サーバーエラー
+          description: サーバーエラー (汎用)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InternalServerErrorException'
+                $ref: '#/components/schemas/InternalServerError'
       tags:
         - Users
       requestBody:
@@ -317,7 +323,7 @@ components:
       title: AccessToken
       examples:
         - eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyIiwiaWF0IjoxNzM1NzE4NDAwfQ.srCq5l7u2mKq8eM4X4g5wqVd5J9Jw7V0q1c2d3e4f5g
-    BadRequestException:
+    BadRequestError:
       type: object
       required:
         - errorCode
@@ -334,11 +340,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ErrorDetail'
-      description: リクエスト内容が不正
-      title: BadRequestException
+      description: リクエスト内容が不正 (汎用)
+      title: BadRequestError
       examples:
         - errorCode: '4000'
-          message: BadRequestException
+          message: BadRequestError
           meta:
             respondedAt: '2025-01-01T12:00:00Z'
           details:
@@ -408,7 +414,7 @@ components:
       description: エラーメッセージ
       title: ErrorMessage
       examples:
-        - BadRequestException
+        - BadRequestError
     GetUserResponse:
       type: object
       required:
@@ -431,7 +437,7 @@ components:
         mailAddress:
           $ref: '#/components/schemas/MailAddress'
       title: GetUserResult
-    InternalServerErrorException:
+    InternalServerError:
       type: object
       required:
         - errorCode
@@ -444,11 +450,11 @@ components:
           $ref: '#/components/schemas/ErrorMessage'
         meta:
           $ref: '#/components/schemas/CommonResponseMeta'
-      description: サーバー内部で予期せぬエラーが発生した
-      title: InternalServerErrorException
+      description: サーバー内部で予期せぬエラーが発生した (汎用)
+      title: InternalServerError
       examples:
         - errorCode: '5000'
-          message: InternalServerErrorException
+          message: InternalServerError
           meta:
             respondedAt: '2025-01-01T12:00:00Z'
     LoginRequest:
@@ -492,6 +498,26 @@ components:
       title: MailAddress
       examples:
         - user@example.com
+    MailAddressAlreadyExistsError:
+      type: object
+      required:
+        - errorCode
+        - message
+        - meta
+      properties:
+        errorCode:
+          $ref: '#/components/schemas/ErrorCode'
+        message:
+          $ref: '#/components/schemas/ErrorMessage'
+        meta:
+          $ref: '#/components/schemas/CommonResponseMeta'
+      description: メールアドレスが既に使用されている
+      title: MailAddressAlreadyExistsError
+      examples:
+        - errorCode: '4091'
+          message: MailAddressAlreadyExistsError
+          meta:
+            respondedAt: '2025-01-01T12:00:00Z'
     Password:
       type: string
       minLength: 12
@@ -537,7 +563,7 @@ components:
       title: RefreshToken
       examples:
         - rt_2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f
-    ResourceNotFoundException:
+    ResourceNotFoundError:
       type: object
       required:
         - errorCode
@@ -550,11 +576,11 @@ components:
           $ref: '#/components/schemas/ErrorMessage'
         meta:
           $ref: '#/components/schemas/CommonResponseMeta'
-      description: リソースが存在しない
-      title: ResourceNotFoundException
+      description: リソースが存在しない (汎用)
+      title: ResourceNotFoundError
       examples:
         - errorCode: '4040'
-          message: ResourceNotFoundException
+          message: ResourceNotFoundError
           meta:
             respondedAt: '2025-01-01T12:00:00Z'
     RespondedAt:
@@ -564,7 +590,7 @@ components:
       title: RespondedAt
       examples:
         - '2025-01-01T12:00:00Z'
-    UnauthorizedException:
+    UnauthorizedError:
       type: object
       required:
         - errorCode
@@ -577,11 +603,11 @@ components:
           $ref: '#/components/schemas/ErrorMessage'
         meta:
           $ref: '#/components/schemas/CommonResponseMeta'
-      description: 認証情報が不正
-      title: UnauthorizedException
+      description: 認証情報が不正 (汎用)
+      title: UnauthorizedError
       examples:
         - errorCode: '4010'
-          message: UnauthorizedException
+          message: UnauthorizedError
           meta:
             respondedAt: '2025-01-01T12:00:00Z'
     UpdateUserRequest:

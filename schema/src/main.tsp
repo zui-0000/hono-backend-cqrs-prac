@@ -21,6 +21,7 @@ namespace BackendApi {
     op create(@body body: CreateUserRequest):
       | SuccessCreatedResponse<CreateUserResponse>
       | BadRequestErrorResponse
+      | MailAddressAlreadyExistsErrorResponse
       | InternalServerErrorResponse;
 
     /** IDを指定してユーザーを取得する (要認証) */
