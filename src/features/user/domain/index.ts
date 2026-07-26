@@ -5,5 +5,6 @@
 export * from "./model/user";
 export * from "./model/vo/id";
 export * from "./model/vo/name";
+export * from "./model/vo/password";
 export * from "./model/vo/hashed-password";
 export * from "./repository";
