@@ -1,4 +1,4 @@
 @summary("ErrorMessage")
 @doc("エラーメッセージ")
-@example("BadRequestException")
+@example("BadRequestError")
 scalar ErrorMessage extends string;
