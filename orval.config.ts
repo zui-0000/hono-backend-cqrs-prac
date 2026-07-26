@@ -1,22 +1,26 @@
 import { defineConfig } from "orval";
 
-// OpenAPI (TypeSpec が生成) から zod スキーマを生成する設定。
-// - client: "zod" … fetch クライアント等は作らず zod スキーマのみ生成 (バックエンド検証用)
-// - mode: "tags"  … タグ (Users / Auth) ごとにファイル分割
-// - zod.version 4 … zod v4 構文で出力
-// 生成物は src/generated 配下 (型は z.infer で導出)。
+// OpenAPI (TypeSpec が生成) から Effect Schema を生成する設定。
+// - client: "effect" … fetch クライアント等は作らず Effect Schema のみ生成 (バックエンド検証用)
+// - mode: "tags"     … タグ (Users / Auth) ごとにファイル分割
+// 生成物は src/generated 配下。ドメイン層と同じ Effect Schema なので、
+// 境界での decode 結果がそのまま Effect のエラーチャネルに乗る。
 export default defineConfig({
   backend: {
     input: {
       target: "./schema/dist/openapi.yaml",
     },
     output: {
-      client: "zod",
+      client: "effect",
       mode: "tags",
       target: "./src/generated",
       override: {
-        zod: {
-          version: 4,
+        effect: {
+          // 名前付きスキーマ (UserId 等) を branded 型として生成する。
+          // ※ これは「API 契約上の型」であり、ドメイン層の VO (User.Id 等) とは別物。
+          useBrandedTypes: true,
+          // レスポンスをステータスコードごとに生成する (400/409/500 のエラー型も得るため)。
+          generateEachHttpStatus: true,
         },
       },
     },
