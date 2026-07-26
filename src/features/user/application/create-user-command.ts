@@ -1,5 +1,6 @@
 import { Effect, Option, Schema } from "effect";
 import { MailAddress } from "~/shared/domain/mail-address";
+import { Password } from "~/shared/domain/password";
 import {
   MailAddressAlreadyExistsError,
   type RepositoryError,
@@ -17,7 +18,7 @@ import * as User from "../domain";
 export const CreateUserCommandInput = Schema.Struct({
   name: User.Name,
   mailAddress: MailAddress,
-  password: User.Password,
+  password: Password,
 });
 export type CreateUserCommandInput = typeof CreateUserCommandInput.Type;
 

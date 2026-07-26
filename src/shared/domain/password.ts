@@ -5,12 +5,14 @@ import { Schema } from "effect";
  * API 契約 (TypeSpec の Password) と同じ制約。
  *
  * NIST SP 800-63B に沿い、構成ルール (記号必須等) は課さず長さで強度を担保する。
- * この値は application 層で PasswordHasher に渡され HashedPassword になる。
- * ドメイン (User 集約) が保持することはない = 平文は境界を越えない。
+ *
+ * ユーザー登録 (users) と認証 (auth) の双方で使うため共有ドメインに置く。
+ * application 層で PasswordHasher に渡してハッシュ化するための一時的な値であり、
+ * 集約が保持することはない = 平文はドメインの内側に留まらない。
  */
 export const Password = Schema.String.pipe(
   Schema.minLength(12),
   Schema.maxLength(128),
-  Schema.brand("User.Password"),
+  Schema.brand("Password"),
 );
 export type Password = typeof Password.Type;
