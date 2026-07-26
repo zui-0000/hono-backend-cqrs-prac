@@ -64,13 +64,14 @@ src/shared/db/
 
 ## t_user テーブル
 
-| カラム       | 型           | 制約 / 既定                                           |
-| ------------ | ------------ | ----------------------------------------------------- |
-| id           | uuid         | PRIMARY KEY（**DB DEFAULT なし** = アプリ側採番）     |
-| name         | varchar(100) | NOT NULL                                              |
-| mail_address | varchar(255) | NOT NULL, UNIQUE                                      |
-| created_at   | timestamptz  | NOT NULL, DEFAULT now()                               |
-| updated_at   | timestamptz  | NOT NULL, DEFAULT now()（更新はアプリ側 `$onUpdate`） |
+| カラム          | 型           | 制約 / 既定                                           |
+| --------------- | ------------ | ----------------------------------------------------- |
+| id              | uuid         | PRIMARY KEY（**DB DEFAULT なし** = アプリ側採番）     |
+| name            | varchar(100) | NOT NULL                                              |
+| mail_address    | varchar(255) | NOT NULL, UNIQUE                                      |
+| hashed_password | text         | NOT NULL（パスワードのハッシュ。argon2id 想定）       |
+| created_at      | timestamptz  | NOT NULL, DEFAULT now()                               |
+| updated_at      | timestamptz  | NOT NULL, DEFAULT now()（更新はアプリ側 `$onUpdate`） |
 
 ---
 
@@ -92,7 +93,13 @@ src/shared/db/
 - **mail_address = 255**: RFC 5321 の実質上限 254 に収まる切りのいい値。
   （内訳: ローカル部 64 + ドメイン部 255、SMTP 経路制約で全体 254）
 - **name = 100**: 技術的上限はなく業務ルール。日英どちらの名前にも十分でバランスが良い。
-- 補足: 本来これらは **API 層（TypeSpec / zod）でも二重に守る**予定。DB は最後の砦。
+- **hashed_password = text（上限なし）**: name / mail とは逆に、これは**サーバー生成の不透明値**
+  （`Bun.password` が出力するハッシュ）で、ユーザーが長さを操作できないため暴走入力を防ぐ上限が不要。
+  むしろ `varchar(n)` で縛ると、アルゴリズム/パラメータ変更でハッシュ長が伸びた時に
+  **サイレント切り捨て → 認証が壊れる**危険がある（text と varchar(n) は Postgres 上で性能差なし）。
+- 補足: 本来 name / mail の上限は **API 層（TypeSpec / zod）でも二重に守る**予定。DB は最後の砦。
+
+> **原則**: ユーザー入力の列は上限で守る（`varchar`）。サーバー生成の不透明値は `text` で切り捨て事故を防ぐ。
 
 ---
 
@@ -118,11 +125,11 @@ schema.ts 編集
 
 | script                           | 内容                                                                 |
 | -------------------------------- | -------------------------------------------------------------------- |
-| `pnpm db:up`                     | Docker で Postgres 起動（停止中コンテナの再開も兼ねる）              |
-| `pnpm db:stop`                   | 停止（コンテナは残す。`down` と違い破棄しない）                      |
 | `pnpm db:generate --name <name>` | マイグレーション生成（**必ず `--name` を付ける**。無いとランダム名） |
 | `pnpm db:migrate`                | 適用（`bun run src/shared/db/scripts/migrate.ts`）                   |
 | `pnpm db:studio`                 | GUI（`https://local.drizzle.studio`）                                |
+
+DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose stop` を直接実行する（pnpm スクリプトにはしていない）。
 
 ### migrations は git 管理する
 
