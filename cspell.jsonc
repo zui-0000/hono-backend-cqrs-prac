@@ -21,13 +21,13 @@
     "tspconfig",
     "pnpm",
     "mise",
-    "Redoc"
+    "Redoc",
   ],
   // 綴りチェック対象外 (生成物・移行 SQL・ロックファイル)
   "ignorePaths": [
     "node_modules",
     "src/generated",
     "src/shared/db/migrations",
-    "pnpm-lock.yaml"
-  ]
+    "pnpm-lock.yaml",
+  ],
 }

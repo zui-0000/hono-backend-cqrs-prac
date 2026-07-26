@@ -9,7 +9,11 @@
     "correctness": "error",
   },
   // 個別ルールの上書きはここに書く (例: "no-console": "error")。
-  "rules": {},
+  "rules": {
+    // ファイル名は kebab-case (ハイフン繋ぎ) を強制。
+    // OS 間の大小事故 (macOS/Windows は大小無視) と命名ブレを防ぐ。
+    "unicorn/filename-case": ["error", { "case": "kebabCase" }],
+  },
   // builtin グローバル (console, URL 等) を認識させる。
   "env": {
     "builtin": true,
