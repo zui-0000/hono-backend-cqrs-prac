@@ -9,12 +9,13 @@ export const tUser = pgTable("t_user", {
   mailAddress: varchar("mail_address", { length: 255 }).notNull().unique(),
   // パスワードのハッシュ (argon2id)。平文は保存しない。ハッシュ化はアプリ層 (Bun.password) が行う。
   hashedPassword: text("hashed_password").notNull(),
+  // 作成/更新時刻はドメイン (User 集約) が Clock 経由で決める。
+  // DB 側で上書きするとドメインが決めた値が失われるため、$onUpdate は付けない。
+  // DEFAULT は直接 INSERT する場合の保険として残す。
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),
-  // 更新時刻はアプリ側 (Drizzle の update 経由) で自動更新する。
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()
-    .notNull()
-    .$onUpdate(() => new Date()),
+    .notNull(),
 });
