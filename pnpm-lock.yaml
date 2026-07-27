@@ -207,9 +207,6 @@ importers:
 
   .:
     dependencies:
-      '@hono/zod-validator':
-        specifier: ^0.9.0
-        version: 0.9.0(hono@4.12.32)(zod@4.4.3)
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(bun-types@1.3.14)(postgres@3.4.9)
@@ -219,9 +216,6 @@ importers:
       hono:
         specifier: ^4.12.32
         version: 4.12.32
-      zod:
-        specifier: ^4.4.3
-        version: 4.4.3
     devDependencies:
       '@types/bun':
         specifier: ^1.3.14
@@ -712,12 +706,6 @@ packages:
 
   '@gerrit0/mini-shiki@3.23.0':
     resolution: {integrity: sha512-bEMORlG0cqdjVyCEuU0cDQbORWX+kYCeo0kV1lbxF5bt4r7SID2l9bqsxJEM0zndaxpOUT7riCyIVEuqq/Ynxg==}
-
-  '@hono/zod-validator@0.9.0':
-    resolution: {integrity: sha512-n0ZSXmCiHVIp4Y5wlOOyZCeTd/rsawA/qW1cipB8QOYKZ9N8Tk0nZUZCXho9cu374AN4JpDNKioNKBJ/W+LBug==}
-    peerDependencies:
-      hono: '>=4.11.2'
-      zod: ^3.25.0 || ^4.0.0
 
   '@orval/angular@8.22.0':
     resolution: {integrity: sha512-lSvaNj+VHGIWBQOG104HfPNrk2xGjpArwy67u6ZBPzHo/OtDE5Tm1t+ARYseCOElFr4z3i3A62qjFLFy6zj00Q==}
@@ -1698,9 +1686,6 @@ packages:
     resolution: {integrity: sha512-CzhO+pFNo8ajLM2d2IW/R93ipy99LWjtwblvC1RsoSUMZgyLbYFr221TnSNT7GjGdYui6P459mw9JH/g/zW2ug==}
     engines: {node: '>=18'}
 
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
-
 snapshots:
 
   '@commander-js/extra-typings@15.0.0(commander@15.0.0)':
@@ -1948,11 +1933,6 @@ snapshots:
       '@shikijs/themes': 3.23.0
       '@shikijs/types': 3.23.0
       '@shikijs/vscode-textmate': 10.0.2
-
-  '@hono/zod-validator@0.9.0(hono@4.12.32)(zod@4.4.3)':
-    dependencies:
-      hono: 4.12.32
-      zod: 4.4.3
 
   '@orval/angular@8.22.0(typescript@7.0.2)':
     dependencies:
@@ -2797,5 +2777,3 @@ snapshots:
   yocto-queue@1.2.2: {}
 
   yoctocolors@2.1.2: {}
-
-  zod@4.4.3: {}
