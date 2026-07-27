@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
 import { createApp } from "~/app";
-import * as User from "~/features/user/domain/model";
-import { UserRepository } from "~/features/user/domain/user-repository";
+import * as User from "~/contexts/user/domain/model";
+import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import { UuidGenerator } from "~/shared/service/uuid-generator";

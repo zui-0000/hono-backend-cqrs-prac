@@ -115,15 +115,15 @@ schema/                 # TypeSpec による API 契約（独立プロジェク�
 src/
 ├─ main.ts              # エントリ（Bun）。本番の Layer から runtime を作り app に注入
 ├─ app.ts               # Hono アプリの組み立て（ルーティング + runtime の注入点）
-├─ runtime.ts           # 合成ルート。Layer の結線（features を知る唯一の層）
-├─ features/            # bounded context 単位（package by feature）
-│  └─ <context>/        #   例: user
+├─ runtime.ts           # 合成ルート。Layer の結線（contexts を知る唯一の層）
+├─ contexts/            # 境界づけられたコンテキスト単位で縦に切る
+│  └─ <context>/        #   例: user / auth
 │     ├─ domain/        #     集約 / 値オブジェクト / リポジトリのポート
 │     ├─ application/   #     command / query（CQRS）
 │     ├─ infrastructure/#     リポジトリ実装（domain ↔ DB 変換, Layer）
 │     └─ presentation/  #     controller（HTTP ↔ Effect の境界）
 ├─ shared/
-│  ├─ domain/           # feature を跨ぐ値オブジェクト（Uuid / MailAddress / Password）
+│  ├─ domain/           # コンテキストを跨ぐ値オブジェクト（Uuid / MailAddress / Password）
 │  ├─ error/            # API エラーカタログ（errorCode 体系と型付きエラー）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  ├─ service/          # 横断サービス（採番・ハッシュ化）のポートと実装
@@ -133,13 +133,19 @@ src/
 docs/                   # 設計と学びの記録
 ```
 
-- ドメインモデルは feature ごとに per-context で保持。テーブル定義（Drizzle スキーマ）は
+- `features/` ではなく `contexts/` としているのは、**コンテキストどうしが関係を持つのを
+  前提にするため**。フロントエンド由来の「独立した feature」という含意を避け、DDD の
+  文脈マッピング（例: `auth → user` は Customer/Supplier）で関係を説明できる語彙に揃えた。
+- ドメインモデルはコンテキストごとに保持。テーブル定義（Drizzle スキーマ）は
   共有インフラとして `src/shared/db/schema.ts` に集約する。
 - ドメインの型・関数は bare 名で定義し、利用側は `import * as User from ".../user/domain/model"` の
   namespace で参照する（`User.Model` / `User.Id` / `User.create`）。
 - 依存の向きは常に内向き。「どの実装を使うか」を知るのは `src/runtime.ts` だけで、
-  `shared/` は features を import しない。controller は `createApp(runtime)` 経由で
+  `shared/` は contexts を import しない。controller は `createApp(runtime)` 経由で
   ランタイムを受け取るため、テストでは Layer を差し替えて DB なしで HTTP 境界ごと検証できる。
+- コンテキストを跨ぐ参照は**ポート（`domain/`・`application/` の interface）に限る**。
+  他コンテキストの `infrastructure/` を直接 import しない。書き込み（集約の変更）は
+  必ず所有コンテキストの command を通す。
 
 ## ドキュメント
 

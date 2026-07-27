@@ -55,10 +55,10 @@ src/shared/db/
 
 - **スキーマを 1 ファイルに集約した理由**: 物理 DB は共有インフラで、FK が境界を跨ぐ。
   一望できて関係整合も扱いやすい。
-- **ドメインモデル（集約・値オブジェクト）は `features/<context>/domain/` に per-context で残す**。
+- **ドメインモデル（集約・値オブジェクト）は `contexts/<context>/domain/` にコンテキストごとで残す**。
   DDD の芯（境界ごとのドメイン分離）はそちらで守る。テーブル↔ドメインの変換は
-  `features/<context>/infrastructure/` の repository が担い、`~/shared/db/schema` を import する
-  （features → shared の正しい依存方向）。
+  `contexts/<context>/infrastructure/` の repository が担い、`~/shared/db/schema` を import する
+  （contexts → shared の正しい依存方向）。
 
 ---
 

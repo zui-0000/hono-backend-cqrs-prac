@@ -1,5 +1,5 @@
 import { Layer, type ManagedRuntime } from "effect";
-import { UserRepositoryLive } from "~/features/user/infrastructure/user-repository";
+import { UserRepositoryLive } from "~/contexts/user/infrastructure/user-repository";
 import { PasswordHasherLive } from "~/shared/service/password-hasher";
 import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
 
@@ -10,8 +10,8 @@ import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
  * 「どの実装を使うか」を知っているのはこのファイルのみで、
  * domain / application / presentation は Tag しか知らない (依存性逆転)。
  *
- * shared/ ではなく src 直下に置くのは、features を import する唯一の層だから。
- * 共有基盤 (shared/) が個別 feature を知る構造を避ける。
+ * shared/ ではなく src 直下に置くのは、contexts を import する唯一の層だから。
+ * 共有基盤 (shared/) が個別コンテキストを知る構造を避ける。
  */
 export const AppLayer = Layer.mergeAll(
   UserRepositoryLive,
@@ -21,7 +21,7 @@ export const AppLayer = Layer.mergeAll(
 
 /**
  * AppLayer が提供するサービスの総体。
- * union を手で保守せず Layer から導出するため、feature 追加時は
+ * union を手で保守せず Layer から導出するため、コンテキスト追加時は
  * AppLayer に足すだけで済む。
  */
 export type AppServices = Layer.Layer.Success<typeof AppLayer>;

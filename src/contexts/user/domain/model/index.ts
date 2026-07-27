@@ -1,5 +1,5 @@
 // User ドメインの公開 API (barrel)。
-// 利用側は `import * as User from "~/features/user/domain/model"` で読み込み、
+// 利用側は `import * as User from "~/contexts/user/domain/model"` で読み込み、
 // `User.Id` / `User.Name` / `User.Model` / `User.create` のように
 // namespace が文脈を与える形で参照する (型名自体は bare)。
 export * from "./user";

@@ -2,7 +2,7 @@ import { Effect } from "effect";
 import {
   createUserCommand,
   CreateUserCommandInput,
-} from "~/features/user/application/create-user-command";
+} from "~/contexts/user/application/create-user-command";
 import {
   CreateUser201Response,
   CreateUserBody,

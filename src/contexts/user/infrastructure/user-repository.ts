@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
-import * as User from "~/features/user/domain/model";
-import { UserRepository } from "~/features/user/domain/user-repository";
+import * as User from "~/contexts/user/domain/model";
+import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
 import { tUser } from "~/shared/db/schema";
