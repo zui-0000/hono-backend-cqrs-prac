@@ -1,8 +1,6 @@
 import { Effect } from "effect";
-import {
-  createUserCommand,
-  CreateUserCommandInput,
-} from "~/contexts/user/application/create-user-command";
+import { createUserCommand } from "~/contexts/user/application/create-user-command";
+import { CreateUserCommandInput } from "~/contexts/user/application/dto";
 import {
   CreateUser201Response,
   CreateUserBody,

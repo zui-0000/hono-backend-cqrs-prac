@@ -1,4 +1,5 @@
 import { Layer, type ManagedRuntime } from "effect";
+import { GetUserQueryServiceLive } from "~/contexts/user/infrastructure/get-user-query-service";
 import { UserRepositoryLive } from "~/contexts/user/infrastructure/user-repository";
 import { PasswordHasherLive } from "~/shared/service/password-hasher";
 import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
@@ -15,6 +16,7 @@ import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
  */
 export const AppLayer = Layer.mergeAll(
   UserRepositoryLive,
+  GetUserQueryServiceLive,
   PasswordHasherLive,
   UuidGeneratorLive,
 );

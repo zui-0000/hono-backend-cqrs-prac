@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
 import { createApp } from "~/app";
+import type { UserDto } from "~/contexts/user/application/dto";
+import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import * as User from "~/contexts/user/domain/model";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
+import type { AppRuntime } from "~/runtime";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import { UuidGenerator } from "~/shared/service/uuid-generator";
@@ -12,7 +15,7 @@ import { UuidGenerator } from "~/shared/service/uuid-generator";
  *
  * createApp はランタイムを引数で受け取るため、本番の Layer の代わりに
  * テスト用の Layer から作ったランタイムを渡せる。これにより
- * 「リクエスト → 検証 → コマンド → リポジトリ呼び出し → 応答」までを
+ * 「リクエスト → 検証 → ユースケース → 応答」までを
  * DB を起動せず、かつ決定的 (採番が固定) に検証できる。
  */
 
@@ -26,13 +29,13 @@ const validBody = {
   password: "SuperSecret123!",
 };
 
-/** テスト用ランタイム。UserRepository だけケースごとに部分差し替えする。 */
+/** テスト用ランタイム。検証したいサービスだけケースごとに部分差し替えする。 */
 const makeRuntime = (
-  userRepository: Partial<UserRepository["Type"]> = {},
-): ManagedRuntime.ManagedRuntime<
-  UserRepository | PasswordHasher | UuidGenerator,
-  never
-> =>
+  overrides: {
+    readonly userRepository?: Partial<UserRepository["Type"]>;
+    readonly getUserQueryService?: Partial<GetUserQueryService>;
+  } = {},
+): AppRuntime =>
   ManagedRuntime.make(
     Layer.mergeAll(
       Layer.succeed(UserRepository, {
@@ -41,7 +44,11 @@ const makeRuntime = (
         findById: () => Effect.succeed(Option.none()),
         findByMailAddress: () => Effect.succeed(Option.none()),
         deleteById: () => Effect.void,
-        ...userRepository,
+        ...overrides.userRepository,
+      }),
+      Layer.succeed(GetUserQueryService, {
+        execute: () => Effect.succeed(Option.none()),
+        ...overrides.getUserQueryService,
       }),
       Layer.succeed(PasswordHasher, {
         hash: () => Effect.succeed("hashed-by-fake"),
@@ -52,27 +59,34 @@ const makeRuntime = (
     ),
   );
 
+const headers = {
+  "Content-Type": "application/json",
+  "X-Request-Id": REQUEST_ID,
+};
+
 const postUsers = async (
-  runtime: ReturnType<typeof makeRuntime>,
+  runtime: AppRuntime,
   body: Record<string, unknown>,
 ): Promise<Response> =>
   await createApp(runtime).request("/users", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Request-Id": REQUEST_ID,
-    },
+    headers,
     body: JSON.stringify(body),
   });
+
+const getUser = async (runtime: AppRuntime, id: string): Promise<Response> =>
+  await createApp(runtime).request(`/users/${id}`, { headers });
 
 describe("POST /users", () => {
   test("正常系: 201 を返し、ハッシュ済みの User を永続化する", async () => {
     const created: User.Model[] = [];
     const runtime = makeRuntime({
-      create: (user) =>
-        Effect.sync(() => {
-          created.push(user);
-        }),
+      userRepository: {
+        create: (user) =>
+          Effect.sync(() => {
+            created.push(user);
+          }),
+      },
     });
 
     const response = await postUsers(runtime, validBody);
@@ -98,7 +112,9 @@ describe("POST /users", () => {
       updatedAt: new Date(0),
     };
     const runtime = makeRuntime({
-      findByMailAddress: () => Effect.succeed(Option.some(existing)),
+      userRepository: {
+        findByMailAddress: () => Effect.succeed(Option.some(existing)),
+      },
     });
 
     const response = await postUsers(runtime, validBody);
@@ -117,6 +133,40 @@ describe("POST /users", () => {
     expect(await response.json()).toMatchObject({
       errorCode: "4000",
       details: [{ field: "password" }],
+    });
+  });
+});
+
+describe("GET /users/:id", () => {
+  test("正常系: 200 を返し、契約どおり name / mailAddress のみを含む", async () => {
+    const dto: UserDto = { name: "アスカ", mailAddress: "asuka@example.com" };
+    const runtime = makeRuntime({
+      getUserQueryService: { execute: () => Effect.succeed(Option.some(dto)) },
+    });
+
+    const response = await getUser(runtime, FIXED_UUID);
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      result: { name: dto.name, mailAddress: dto.mailAddress },
+    });
+  });
+
+  test("異常系: 存在しない id は 404 (errorCode 4040)", async () => {
+    // 既定の fake は Option.none を返す = 見つからない。
+    const response = await getUser(makeRuntime(), FIXED_UUID);
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ errorCode: "4040" });
+  });
+
+  test("異常系: uuid v7 形式でない id は 400 と該当フィールド", async () => {
+    const response = await getUser(makeRuntime(), "not-a-uuid");
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      errorCode: "4000",
+      details: [{ field: "id" }],
     });
   });
 });

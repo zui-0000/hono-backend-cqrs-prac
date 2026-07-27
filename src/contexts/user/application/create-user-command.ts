@@ -1,6 +1,4 @@
 import { Effect, Option, Schema } from "effect";
-import { MailAddress } from "~/shared/domain/mail-address";
-import { Password } from "~/shared/domain/password";
 import {
   MailAddressAlreadyExistsError,
   type RepositoryError,
@@ -9,19 +7,7 @@ import { PasswordHasher } from "~/shared/service/password-hasher";
 import type { UuidGenerator } from "~/shared/service/uuid-generator";
 import { UserRepository } from "../domain/user-repository";
 import * as User from "../domain/model";
-
-/**
- * ユーザー新規作成コマンドの入力スキーマ。
- * 値オブジェクトのスキーマを組み合わせて構成しているため、
- * 呼び出し側は生の入力を一度 decode するだけで検証済みの値が得られる
- * (フィールドごとの詰め替えが不要になる)。
- */
-export const CreateUserCommandInput = Schema.Struct({
-  name: User.Name,
-  mailAddress: MailAddress,
-  password: Password,
-});
-export type CreateUserCommandInput = typeof CreateUserCommandInput.Type;
+import type { CreateUserCommandInput } from "./dto";
 
 /**
  * ユーザーを新規作成する (CQRS のコマンド)。

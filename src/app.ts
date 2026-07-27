@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createUserController } from "~/contexts/user/presentation/create-user-controller";
+import { getUserController } from "~/contexts/user/presentation/get-user-controller";
 import type { AppRuntime } from "~/runtime";
 
 /**
@@ -15,6 +16,7 @@ export const createApp = (runtime: AppRuntime) => {
   app.get("/health", (c) => c.json({ status: "ok" }));
 
   app.post("/users", createUserController(runtime));
+  app.get("/users/:id", getUserController(runtime));
 
   return app;
 };
