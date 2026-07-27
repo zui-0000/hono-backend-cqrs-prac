@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
-import * as User from "~/features/user/domain";
+import * as User from "~/features/user/domain/model";
+import { UserRepository } from "~/features/user/domain/user-repository";
 import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
 import { tUser } from "~/shared/db/schema";
@@ -74,10 +75,10 @@ const toDomainHead = (
   );
 
 /**
- * User.Repository の Drizzle 実装 (アダプタ)。
- * ポート (domain/repository.ts) に対する具体実装で、Layer として注入する。
+ * UserRepository の Drizzle 実装 (アダプタ)。
+ * ポート (domain/user-repository.ts) に対する具体実装で、Layer として注入する。
  */
-export const DrizzleRepositoryLive = Layer.succeed(User.Repository, {
+export const UserRepositoryLive = Layer.succeed(UserRepository, {
   create: (user) =>
     write(user, () =>
       db.insert(tUser).values({

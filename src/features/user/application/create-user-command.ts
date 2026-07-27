@@ -7,7 +7,8 @@ import {
 } from "~/shared/error";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import type { UuidGenerator } from "~/shared/service/uuid-generator";
-import * as User from "../domain";
+import { UserRepository } from "../domain/user-repository";
+import * as User from "../domain/model";
 
 /**
  * ユーザー新規作成コマンドの入力スキーマ。
@@ -39,32 +40,37 @@ export const createUserCommand = (
 ): Effect.Effect<
   void,
   MailAddressAlreadyExistsError | RepositoryError,
-  User.Repository | PasswordHasher | UuidGenerator
+  UserRepository | PasswordHasher | UuidGenerator
 > =>
   Effect.gen(function* () {
-    const userRepository = yield* User.Repository;
+    const userRepository = yield* UserRepository;
     const passwordHasher = yield* PasswordHasher;
 
-    // メアド重複チェック
-    const existing = yield* userRepository.findByMailAddress(input.mailAddress);
-    if (Option.isSome(existing)) {
-      return yield* new MailAddressAlreadyExistsError({
-        mailAddress: input.mailAddress,
-      });
-    }
+    // 1. メールアドレスの重複チェック
+    yield* userRepository.findByMailAddress(input.mailAddress).pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.void,
+          onSome: () =>
+            new MailAddressAlreadyExistsError({
+              mailAddress: input.mailAddress,
+            }),
+        }),
+      ),
+    );
 
-    // パスワードハッシュ化
-    // ハッシュ化の結果は必ず妥当な HashedPassword なので decode 失敗は defect 扱い。
-    const rawHash = yield* passwordHasher.hash(input.password);
-    const hashedPassword = yield* Schema.decode(User.HashedPassword)(
-      rawHash,
-    ).pipe(Effect.orDie);
+    // 2. パスワードをハッシュ化 (結果は必ず妥当なので decode 失敗は defect 扱い)
+    const hashedPassword = yield* passwordHasher
+      .hash(input.password)
+      .pipe(Effect.flatMap(Schema.decode(User.HashedPassword)), Effect.orDie);
 
+    // 3. User 集約を生成
     const user = yield* User.create({
       name: input.name,
       mailAddress: input.mailAddress,
       hashedPassword,
     });
 
+    // 4. リポジトリへ永続化
     yield* userRepository.create(user);
   });

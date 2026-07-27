@@ -1,5 +1,5 @@
 import { Layer, ManagedRuntime } from "effect";
-import { DrizzleRepositoryLive } from "~/features/user/infrastructure/drizzle-repository";
+import { UserRepositoryLive } from "~/features/user/infrastructure/user-repository";
 import { PasswordHasherLive } from "~/shared/service/password-hasher";
 import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
 
@@ -8,7 +8,7 @@ import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
  * ポートに対する本番アダプタをここで一箇所に集約する。
  */
 export const AppLayer = Layer.mergeAll(
-  DrizzleRepositoryLive,
+  UserRepositoryLive,
   PasswordHasherLive,
   UuidGeneratorLive,
 );
