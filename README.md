@@ -81,6 +81,7 @@ curl -X POST http://localhost:3000/users \
 | -------------------------------- | --------------------------------------------------------- |
 | `pnpm dev`                       | 開発サーバ（ホットリロード）                              |
 | `pnpm start`                     | 通常起動                                                  |
+| `pnpm test`                      | テスト（`bun test`）                                      |
 | `pnpm check:types`               | 型チェック（`tsc --noEmit`）                              |
 | `pnpm check:lint`                | oxlint                                                    |
 | `pnpm check:updates`             | 依存の更新確認                                            |
@@ -112,7 +113,9 @@ curl -X POST http://localhost:3000/users \
 ```text
 schema/                 # TypeSpec による API 契約（独立プロジェクト, OpenAPI 3.1 出力）
 src/
-├─ main.ts              # エントリ（Hono + Bun）。ルーティング定義
+├─ main.ts              # エントリ（Bun）。本番の Layer から runtime を作り app に注入
+├─ app.ts               # Hono アプリの組み立て（ルーティング + runtime の注入点）
+├─ runtime.ts           # 合成ルート。Layer の結線（features を知る唯一の層）
 ├─ features/            # bounded context 単位（package by feature）
 │  └─ <context>/        #   例: user
 │     ├─ domain/        #     集約 / 値オブジェクト / リポジトリのポート
@@ -123,17 +126,20 @@ src/
 │  ├─ domain/           # feature を跨ぐ値オブジェクト（Uuid / MailAddress / Password）
 │  ├─ error/            # API エラーカタログ（errorCode 体系と型付きエラー）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
-│  ├─ service/          # 横断サービス（時刻・採番・ハッシュ化）のポートと実装
-│  ├─ db/               # Drizzle クライアント / スキーマ / マイグレーション
-│  └─ runtime.ts        # Layer の組み立てと ManagedRuntime
+│  ├─ service/          # 横断サービス（採番・ハッシュ化）のポートと実装
+│  └─ db/               # Drizzle クライアント / スキーマ / マイグレーション
+├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
 └─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）
 docs/                   # 設計と学びの記録
 ```
 
 - ドメインモデルは feature ごとに per-context で保持。テーブル定義（Drizzle スキーマ）は
   共有インフラとして `src/shared/db/schema.ts` に集約する。
-- ドメインの型・関数は bare 名で定義し、利用側は `import * as User from ".../user/domain"` の
+- ドメインの型・関数は bare 名で定義し、利用側は `import * as User from ".../user/domain/model"` の
   namespace で参照する（`User.Model` / `User.Id` / `User.create`）。
+- 依存の向きは常に内向き。「どの実装を使うか」を知るのは `src/runtime.ts` だけで、
+  `shared/` は features を import しない。controller は `createApp(runtime)` 経由で
+  ランタイムを受け取るため、テストでは Layer を差し替えて DB なしで HTTP 境界ごと検証できる。
 
 ## ドキュメント
 

@@ -1,13 +1,12 @@
-import { Effect, Schema } from "effect";
+import { Effect, type ManagedRuntime, Schema } from "effect";
 import type { Context, Handler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import { runtime } from "~/shared/runtime";
+import type { UuidGenerator } from "~/shared/service/uuid-generator";
 import {
   type ApplicationError,
   handleErrorResponse,
 } from "./handle-error-response";
 import { logFailure, REQUEST_ID_HEADER, resolveRequestId } from "./request-log";
-import type { AppServices } from "./types";
 import { validateHeader } from "./validator";
 
 /**
@@ -27,14 +26,25 @@ import { validateHeader } from "./validator";
  *
  * controller はこの関数の戻り値をそのまま export するため、
  * async / try-catch といった定型を書かずに済む。
+ *
+ * 戻り値は Handler ではなく「ランタイムを受け取ると Handler になる関数」。
+ * Effect は R (依存) が解決されるまで実行できず、その解決を行うのが
+ * ManagedRuntime なので、どの実装で動かすかは組み立て時 (app.ts) に決める。
+ * ここでランタイムを import してしまうと本番の Layer が焼き付き、
+ * テストで差し替えられなくなる。
+ *
+ * 必要な依存 R は build から推論され、ランタイム側が R を満たさなければ
+ * 呼び出し箇所でコンパイルエラーになる (渡し忘れを型で防ぐ)。
+ * 相関 ID の採番に UuidGenerator を使うため、R に加えてこれも要求する。
  */
 export const handleWithEffect =
-  <A, ResponseA, ResponseI, HeaderA, HeaderI>(
+  <A, ResponseA, ResponseI, HeaderA, HeaderI, R>(
     status: ContentfulStatusCode,
     responseSchema: Schema.Schema<ResponseA, ResponseI>,
     headerSchema: Schema.Schema<HeaderA, HeaderI>,
-    build: (c: Context) => Effect.Effect<A, ApplicationError, AppServices>,
-  ): Handler =>
+    build: (c: Context) => Effect.Effect<A, ApplicationError, R>,
+  ) =>
+  (runtime: ManagedRuntime.ManagedRuntime<R | UuidGenerator, never>): Handler =>
   async (c) =>
     await runtime.runPromise(
       Effect.gen(function* () {

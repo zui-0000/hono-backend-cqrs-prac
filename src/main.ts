@@ -1,13 +1,11 @@
-import { Hono } from "hono";
-import { createUserController } from "~/features/user/presentation/create-user-controller";
+import { ManagedRuntime } from "effect";
+import { createApp } from "~/app";
+import { AppLayer } from "~/runtime";
 
-// ルーティング定義。パスは TypeSpec の @route と対応する。
-// 処理は各 feature の controller に委譲し、ここでは対応付けのみを持つ。
-const app = new Hono();
-
-app.get("/health", (c) => c.json({ status: "ok" }));
-
-app.post("/users", createUserController);
+// エントリポイント。本番の依存 (AppLayer) からランタイムを一度だけ構築し、
+// それを注入したアプリを Bun のサーバとして公開する。
+const runtime = ManagedRuntime.make(AppLayer);
+const app = createApp(runtime);
 
 export default {
   port: 3000,
