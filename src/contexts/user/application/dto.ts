@@ -1,7 +1,8 @@
 import { Schema } from "effect";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { Password } from "~/shared/domain/password";
-import * as User from "../domain/model";
+import { UserId } from "../domain/model/vo/user-id";
+import { UserName } from "../domain/model/vo/user-name";
 
 /**
  * user コンテキストのユースケース入出力 (DTO)。
@@ -22,7 +23,7 @@ import * as User from "../domain/model";
 
 /** ユーザー新規作成の入力。 */
 export const CreateUserCommandInput = Schema.Struct({
-  name: User.Name,
+  name: UserName,
   mailAddress: MailAddress,
   password: Password,
 });
@@ -34,19 +35,19 @@ export type CreateUserCommandInput = typeof CreateUserCommandInput.Type;
  * 入力は 1 つなので合成した形で定義する (組み立ては presentation 層の責務)。
  */
 export const UpdateUserCommandInput = Schema.Struct({
-  id: User.Id,
-  name: User.Name,
+  id: UserId,
+  name: UserName,
   mailAddress: MailAddress,
 });
 export type UpdateUserCommandInput = typeof UpdateUserCommandInput.Type;
 
 /**
  * ユーザー削除の入力。項目が id だけでも Struct で定義するのは、
- * 生成スキーマの UserId (API 契約の brand) をドメインの User.Id へ
+ * 生成スキーマの UserId (API 契約の brand) をドメインの UserId へ
  * 変換する経路を、他のコマンドと同じ形に揃えるため。
  */
 export const DeleteUserCommandInput = Schema.Struct({
-  id: User.Id,
+  id: UserId,
 });
 export type DeleteUserCommandInput = typeof DeleteUserCommandInput.Type;
 

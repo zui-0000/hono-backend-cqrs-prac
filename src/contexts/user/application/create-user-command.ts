@@ -5,8 +5,9 @@ import {
 } from "~/shared/error";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import type { UuidGenerator } from "~/shared/service/uuid-generator";
+import { createUser } from "../domain/model/user";
+import { UserHashedPassword } from "../domain/model/vo/user-hashed-password";
 import { UserRepository } from "../domain/user-repository";
-import * as User from "../domain/model";
 import type { CreateUserCommandInput } from "./dto";
 
 /**
@@ -48,10 +49,10 @@ export const createUserCommand = (
     // 2. パスワードをハッシュ化 (結果は必ず妥当なので decode 失敗は defect 扱い)
     const hashedPassword = yield* passwordHasher
       .hash(input.password)
-      .pipe(Effect.flatMap(Schema.decode(User.HashedPassword)), Effect.orDie);
+      .pipe(Effect.flatMap(Schema.decode(UserHashedPassword)), Effect.orDie);
 
     // 3. User 集約を生成
-    const user = yield* User.create({
+    const user = yield* createUser({
       name: input.name,
       mailAddress: input.mailAddress,
       hashedPassword,

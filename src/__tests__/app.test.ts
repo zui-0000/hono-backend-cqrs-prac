@@ -3,7 +3,10 @@ import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
 import { createApp } from "~/app";
 import type { UserDto } from "~/contexts/user/application/dto";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
-import * as User from "~/contexts/user/domain/model";
+import { User } from "~/contexts/user/domain/model/user";
+import { UserHashedPassword } from "~/contexts/user/domain/model/vo/user-hashed-password";
+import { UserId } from "~/contexts/user/domain/model/vo/user-id";
+import { UserName } from "~/contexts/user/domain/model/vo/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import type { AppRuntime } from "~/runtime";
 import { MailAddress } from "~/shared/domain/mail-address";
@@ -35,13 +38,13 @@ const validBody = {
 /** 既に永続化されている User 集約。作成/更新日時は 0 に固定して差分を見やすくする。 */
 const makeUser = (
   params: { readonly id?: string; readonly mailAddress?: string } = {},
-): User.Model => ({
-  id: Schema.decodeSync(User.Id)(params.id ?? FIXED_UUID),
-  name: Schema.decodeSync(User.Name)("既存ユーザー"),
+): User => ({
+  id: Schema.decodeSync(UserId)(params.id ?? FIXED_UUID),
+  name: Schema.decodeSync(UserName)("既存ユーザー"),
   mailAddress: Schema.decodeSync(MailAddress)(
     params.mailAddress ?? "existing@example.com",
   ),
-  hashedPassword: Schema.decodeSync(User.HashedPassword)("hashed"),
+  hashedPassword: Schema.decodeSync(UserHashedPassword)("hashed"),
   createdAt: new Date(0),
   updatedAt: new Date(0),
 });
@@ -113,7 +116,7 @@ const deleteUser = async (runtime: AppRuntime, id: string): Promise<Response> =>
 
 describe("POST /users", () => {
   test("正常系: 201 を返し、ハッシュ済みの User を永続化する", async () => {
-    const created: User.Model[] = [];
+    const created: User[] = [];
     const runtime = makeRuntime({
       userRepository: {
         create: (user) =>
@@ -129,10 +132,10 @@ describe("POST /users", () => {
     expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
     expect(created).toHaveLength(1);
     // 採番は UuidGenerator 経由なので、テストでは固定値になる。
-    expect(created[0]?.id).toBe(FIXED_UUID as User.Id);
+    expect(created[0]?.id).toBe(FIXED_UUID as UserId);
     // ドメインは平文を持たず、PasswordHasher の結果だけを保持する。
     expect(created[0]?.hashedPassword).toBe(
-      "hashed-by-fake" as User.HashedPassword,
+      "hashed-by-fake" as UserHashedPassword,
     );
   });
 
@@ -206,7 +209,7 @@ describe("PUT /users/:id", () => {
 
   test("正常系: 204 を返し、更新後の集約を永続化する", async () => {
     const existing = makeUser();
-    const updated: User.Model[] = [];
+    const updated: User[] = [];
     const runtime = makeRuntime({
       userRepository: {
         findById: () => Effect.succeed(Option.some(existing)),
@@ -225,7 +228,7 @@ describe("PUT /users/:id", () => {
     expect(await response.text()).toBe("");
 
     expect(updated).toHaveLength(1);
-    expect(updated[0]?.name).toBe(updateBody.name as User.Name);
+    expect(updated[0]?.name).toBe(updateBody.name as UserName);
     expect(updated[0]?.mailAddress).toBe(updateBody.mailAddress as MailAddress);
     // changeProfile が触らない項目はそのまま引き継がれる。
     expect(updated[0]?.id).toBe(existing.id);
@@ -236,7 +239,7 @@ describe("PUT /users/:id", () => {
       existing.updatedAt.getTime(),
     );
     // 元の集約は書き換わらない (イミュータブル)。
-    expect(existing.name).toBe("既存ユーザー" as User.Name);
+    expect(existing.name).toBe("既存ユーザー" as UserName);
   });
 
   test("正常系: メールアドレスを変えない更新は重複扱いにしない", async () => {
@@ -313,7 +316,7 @@ describe("DELETE /users/:id", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
     expect(await response.text()).toBe("");
-    expect(deleted).toEqual([FIXED_UUID as User.Id]);
+    expect(deleted).toEqual([FIXED_UUID as UserId]);
   });
 
   test("異常系: 存在しない id は 404 で、削除も走らない", async () => {

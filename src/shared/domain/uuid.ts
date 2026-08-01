@@ -8,9 +8,11 @@ const UUID_V7_PATTERN =
  * UUID v7 形式の文字列スキーマ (未 brand・共有ドメイン)。
  *
  * 各集約の id 値オブジェクトは、これに固有の brand を重ねて定義する:
- *   export const Id = Uuid.pipe(Schema.brand("User.Id"));   // contexts/user 側
+ *   export const UserId = Uuid.pipe(Schema.brand("User.Id"));   // contexts/user 側
  *
  * これにより「uuidv7 という形式検証」は共有しつつ、
- * 集約ごとの id 型は名目的に区別 (User.Id と Order.Id を混用不可) に保つ。
+ * 集約ごとの id 型は名目的に区別 (UserId と OrderId を混用不可) に保つ。
+ * brand タグ ("User.Id") はグローバルに一意であればよく、
+ * エクスポート名 (UserId) と一致している必要はない。
  */
 export const Uuid = Schema.String.pipe(Schema.pattern(UUID_V7_PATTERN));

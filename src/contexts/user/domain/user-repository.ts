@@ -4,8 +4,8 @@ import type {
   MailAddressAlreadyExistsError,
   RepositoryError,
 } from "~/shared/error";
-import type { Model } from "./model/user";
-import type { Id } from "./model/vo/id";
+import type { User } from "./model/user";
+import type { UserId } from "./model/vo/user-id";
 
 /**
  * User 集約の永続化ポート (書き込み側 / CQRS のコマンド経路)。
@@ -16,17 +16,17 @@ export class UserRepository extends Context.Tag("UserRepository")<
   UserRepository,
   {
     readonly create: (
-      user: Model,
+      user: User,
     ) => Effect.Effect<void, MailAddressAlreadyExistsError | RepositoryError>;
     readonly update: (
-      user: Model,
+      user: User,
     ) => Effect.Effect<void, MailAddressAlreadyExistsError | RepositoryError>;
     readonly findById: (
-      id: Id,
-    ) => Effect.Effect<Option.Option<Model>, RepositoryError>;
+      id: UserId,
+    ) => Effect.Effect<Option.Option<User>, RepositoryError>;
     readonly findByMailAddress: (
       mailAddress: MailAddress,
-    ) => Effect.Effect<Option.Option<Model>, RepositoryError>;
-    readonly deleteById: (id: Id) => Effect.Effect<void, RepositoryError>;
+    ) => Effect.Effect<Option.Option<User>, RepositoryError>;
+    readonly deleteById: (id: UserId) => Effect.Effect<void, RepositoryError>;
   }
 >() {}

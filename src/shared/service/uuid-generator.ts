@@ -25,9 +25,10 @@ export const UuidGeneratorLive = Layer.succeed(UuidGenerator, {
  * UuidGenerator から生の uuid を得て、対象スキーマへ decode してブランドを付ける。
  * 生成値は必ず妥当なので、decode 失敗は defect (orDie) 扱い。
  *
- * branded な id 型は集約ごとに別物 (User.Id ≠ Order.Id) だが、
+ * branded な id 型は集約ごとに別物 (UserId ≠ OrderId) だが、
  * 「生 uuid → 各 brand へ decode」という定型はこの1関数で共有する。
- * 各集約は `export const generateId = generateBrandedUuid(Id);` と1行で採番関数を得る。
+ * 各集約は `export const generateUserId = generateBrandedUuid(UserId);` と
+ * 1行で採番関数を得る。
  */
 export const generateBrandedUuid = <A extends string>(
   schema: Schema.Schema<A, string>,

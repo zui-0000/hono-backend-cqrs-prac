@@ -4,7 +4,7 @@ import {
   type RepositoryError,
   ResourceNotFoundError,
 } from "~/shared/error";
-import * as User from "../domain/model";
+import { changeUserProfile } from "../domain/model/user";
 import { UserRepository } from "../domain/user-repository";
 import type { UpdateUserCommandInput } from "./dto";
 
@@ -61,7 +61,7 @@ export const updateUserCommand = (
     );
 
     // 3. 集約の状態遷移 (元の user は書き換わらない)
-    const updated = yield* User.changeProfile(user, {
+    const updated = yield* changeUserProfile(user, {
       name: input.name,
       mailAddress: input.mailAddress,
     });

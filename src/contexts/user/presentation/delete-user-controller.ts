@@ -8,7 +8,7 @@ import { decodeInput, validateParams } from "~/shared/presentation/validator";
 /**
  * ユーザーを削除する (DELETE /users/{id})。
  *
- * 入力はパスパラメータのみ。契約の UserId (brand) をドメインの User.Id へ
+ * 入力はパスパラメータのみ。契約の UserId (brand) をドメインの UserId へ
  * 変換するため、他のコマンドと同じく decodeInput を通す。
  *
  * 応答は 204 (本文なし) なので handleNoContentWithEffect を使う。

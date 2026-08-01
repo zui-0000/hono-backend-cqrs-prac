@@ -1,6 +1,9 @@
 import { eq } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
-import * as User from "~/contexts/user/domain/model";
+import { User } from "~/contexts/user/domain/model/user";
+import { UserHashedPassword } from "~/contexts/user/domain/model/vo/user-hashed-password";
+import { UserId } from "~/contexts/user/domain/model/vo/user-id";
+import { UserName } from "~/contexts/user/domain/model/vo/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
@@ -9,12 +12,12 @@ import { MailAddress } from "~/shared/domain/mail-address";
 import { MailAddressAlreadyExistsError, RepositoryError } from "~/shared/error";
 
 /** DB 行 → User 集約への復元。DB の値は既に妥当な前提のため decode 失敗は defect 扱い。 */
-const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User.Model> =>
+const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User> =>
   Effect.gen(function* () {
-    const id = yield* Schema.decode(User.Id)(row.id);
-    const name = yield* Schema.decode(User.Name)(row.name);
+    const id = yield* Schema.decode(UserId)(row.id);
+    const name = yield* Schema.decode(UserName)(row.name);
     const mailAddress = yield* Schema.decode(MailAddress)(row.mailAddress);
-    const hashedPassword = yield* Schema.decode(User.HashedPassword)(
+    const hashedPassword = yield* Schema.decode(UserHashedPassword)(
       row.hashedPassword,
     );
     return {
@@ -47,7 +50,7 @@ const MAIL_ADDRESS_UNIQUE_CONSTRAINT = "t_user_mail_address_unique";
  * 「最後の砦」の経路。それ以外の失敗は RepositoryError (500) のまま。
  */
 const write = (
-  user: User.Model,
+  user: User,
   operation: () => Promise<unknown>,
 ): Effect.Effect<void, MailAddressAlreadyExistsError | RepositoryError> =>
   Effect.tryPromise({
@@ -68,7 +71,7 @@ const write = (
  */
 const toDomainHead = (
   rows: readonly (typeof tUser.$inferSelect)[],
-): Effect.Effect<Option.Option<User.Model>> =>
+): Effect.Effect<Option.Option<User>> =>
   Option.fromNullable(rows[0]).pipe(
     Option.map(toDomain),
     Effect.transposeOption,
