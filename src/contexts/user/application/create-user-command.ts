@@ -7,6 +7,7 @@ import type { UuidGenerator } from "~/shared/service/uuid-generator";
 
 import { createUser } from "../domain/model/user";
 import { UserHashedPassword } from "../domain/model/vo/user-hashed-password";
+import type { UserId } from "../domain/model/vo/user-id";
 import { checkMailAddressDuplication } from "../domain/service/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
 import type { CreateUserCommandInput } from "./dto";
@@ -20,13 +21,16 @@ import type { CreateUserCommandInput } from "./dto";
  * 4. リポジトリへ永続化
  *
  * 失敗 (E) と依存 (R) がすべて型に現れる = throw を使わない。
- * 状態を変えるだけで値は返さない (CQRS のコマンド)。API 契約上も
- * 作成したユーザーの情報は応答に含めないため、集約を外に出す必要がない。
+ *
+ * 返すのは採番された id だけ。CQRS では「コマンドは値を返さない」のが原則だが、
+ * 採番した識別子は例外として返す。id はサーバー側でしか決まらず、これを返さないと
+ * クライアントは作ったリソースを二度と参照できないため (GET /users/{id} が呼べない)。
+ * 集約そのものは外に出さない。
  */
 export const createUserCommand = (
   input: CreateUserCommandInput,
 ): Effect.Effect<
-  void,
+  UserId,
   MailAddressAlreadyExistsError | RepositoryError,
   UserRepository | PasswordHasher | UuidGenerator
 > =>
@@ -51,4 +55,6 @@ export const createUserCommand = (
 
     // 4. リポジトリへ永続化
     yield* userRepository.create(user);
+
+    return user.id;
   });

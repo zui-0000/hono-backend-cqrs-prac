@@ -8,7 +8,6 @@ import {
 } from "~/generated/users";
 import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
 import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
-import { successBody } from "~/shared/presentation/response";
 import { validateParams } from "~/shared/presentation/validator";
 
 /**
@@ -39,9 +38,6 @@ export const getUserController = handleWithEffect(
       );
 
       // 契約が返すのは name / mailAddress のみ (DTO をそのまま流さない)。
-      return yield* successBody({
-        name: user.name,
-        mailAddress: user.mailAddress,
-      });
+      return { name: user.name, mailAddress: user.mailAddress };
     }),
 );

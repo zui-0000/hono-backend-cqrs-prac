@@ -1,12 +1,14 @@
-import { Effect } from "effect";
-
 import type { ErrorCode } from "~/shared/error/error-code";
-import { now } from "~/shared/service/clock";
 
-/** 全レスポンス共通のメタ情報 (TypeSpec の CommonResponseMeta と対応)。 */
-export type ResponseMeta = {
-  readonly respondedAt: string;
-};
+/**
+ * 応答ボディの型 (TypeSpec の各モデルと対応)。
+ *
+ * 成功応答は封筒 (envelope) で包まず、リソースの内容をそのまま返す。
+ * 以前は result / meta で包んでいたが、meta の中身 (respondedAt) は
+ * HTTP の Date ヘッダと重複しており、相関 ID も X-Request-Id ヘッダで
+ * 返しているため、封筒が情報を足していなかった。
+ * そのため成功応答用の組み立て関数は無く、controller が素の値を返す。
+ */
 
 /** エラーの詳細 (TypeSpec の ErrorDetail と対応)。 */
 export type ErrorDetailBody = {
@@ -18,35 +20,16 @@ export type ErrorDetailBody = {
 export type ErrorBody = {
   readonly errorCode: ErrorCode;
   readonly message: string;
-  readonly meta: ResponseMeta;
   readonly details?: readonly ErrorDetailBody[];
 };
 
-/** 現在時刻から共通メタを組み立てる (時刻は Clock 経由)。 */
-export const responseMeta: Effect.Effect<ResponseMeta> = Effect.map(
-  now,
-  (respondedAt) => ({ respondedAt: respondedAt.toISOString() }),
-);
-
-/** 結果 (result) とメタを持つ成功応答のボディを組み立てる。 */
-export const successBody = <A>(
-  result: A,
-): Effect.Effect<{ readonly result: A; readonly meta: ResponseMeta }> =>
-  Effect.map(responseMeta, (meta) => ({ result, meta }));
-
-/** メタのみの成功応答のボディを組み立てる (作成・更新など result を返さない場合)。 */
-export const metaOnlyBody: Effect.Effect<{ readonly meta: ResponseMeta }> =
-  Effect.map(responseMeta, (meta) => ({ meta }));
-
-/** エラー応答のボディを組み立てる。 */
+/** エラー応答のボディを組み立てる。時刻を含まなくなったため純粋な関数。 */
 export const errorBody = (params: {
   readonly errorCode: ErrorCode;
   readonly message: string;
   readonly details?: readonly ErrorDetailBody[];
-}): Effect.Effect<ErrorBody> =>
-  Effect.map(responseMeta, (meta) => ({
-    errorCode: params.errorCode,
-    message: params.message,
-    meta,
-    ...(params.details === undefined ? {} : { details: params.details }),
-  }));
+}): ErrorBody => ({
+  errorCode: params.errorCode,
+  message: params.message,
+  ...(params.details === undefined ? {} : { details: params.details }),
+});

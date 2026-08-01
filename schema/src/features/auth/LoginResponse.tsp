@@ -1,8 +1,7 @@
-import "../../shared/model/index.tsp";
-import "./LoginResult.tsp";
+import "./model/index.tsp";
 
 @summary("LoginResponse")
 model LoginResponse {
-  result: LoginResult;
-  meta: CommonResponseMeta;
+  accessToken: AccessToken;
+  refreshToken: RefreshToken;
 }

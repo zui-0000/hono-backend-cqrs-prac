@@ -5,13 +5,8 @@ import "./ErrorMessage.tsp";
 @summary("MailAddressAlreadyExistsError")
 @doc("メールアドレスが既に使用されている")
 @error
-@example(#{
-  errorCode: "4091",
-  message: "MailAddressAlreadyExistsError",
-  meta: #{ respondedAt: RespondedAt.fromISO("2025-01-01T12:00:00Z") },
-})
+@example(#{ errorCode: "4091", message: "MailAddressAlreadyExistsError" })
 model MailAddressAlreadyExistsError {
   errorCode: ErrorCode;
   message: ErrorMessage;
-  meta: CommonResponseMeta;
 }

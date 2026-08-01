@@ -1,6 +1,7 @@
-import "../../shared/model/index.tsp";
+import "./model/index.tsp";
 
 @summary("CreateUserResponse")
 model CreateUserResponse {
-  meta: CommonResponseMeta;
+  // 採番された ID。クライアントはこれを使って GET /users/{id} を呼べる。
+  id: UserId;
 }

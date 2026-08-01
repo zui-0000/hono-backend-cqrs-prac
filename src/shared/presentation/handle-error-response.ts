@@ -1,4 +1,3 @@
-import { Effect } from "effect";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { BadRequestError } from "~/shared/error/bad-request-error";
@@ -49,52 +48,70 @@ export type HttpErrorResponse = {
  */
 export const handleErrorResponse = (
   error: ApplicationError,
-): Effect.Effect<HttpErrorResponse> => {
+): HttpErrorResponse => {
   switch (error._tag) {
     // ---- 400 Bad Request ----
     // リクエストが不正 (検証違反・JSON として読めない等)。
     // 違反フィールドは validator が details に詰めている。
     case "BadRequestError":
-      return errorBody({
-        errorCode: ErrorCode.BadRequest,
-        message: error.message,
-        ...(error.details === undefined ? {} : { details: error.details }),
-      }).pipe(Effect.map((body) => ({ status: 400 as const, body })));
+      return {
+        status: 400,
+        body: errorBody({
+          errorCode: ErrorCode.BadRequest,
+          message: error.message,
+          ...(error.details === undefined ? {} : { details: error.details }),
+        }),
+      };
 
     // ---- 401 Unauthorized ----
     case "UnauthorizedError":
-      return errorBody({
-        errorCode: ErrorCode.Unauthorized,
-        message: error.message,
-      }).pipe(Effect.map((body) => ({ status: 401 as const, body })));
+      return {
+        status: 401,
+        body: errorBody({
+          errorCode: ErrorCode.Unauthorized,
+          message: error.message,
+        }),
+      };
 
     // ---- 404 Not Found ----
     case "ResourceNotFoundError":
-      return errorBody({
-        errorCode: ErrorCode.ResourceNotFound,
-        message: error.message,
-      }).pipe(Effect.map((body) => ({ status: 404 as const, body })));
+      return {
+        status: 404,
+        body: errorBody({
+          errorCode: ErrorCode.ResourceNotFound,
+          message: error.message,
+        }),
+      };
 
     // ---- 409 Conflict (汎用) ----
     case "ConflictError":
-      return errorBody({
-        errorCode: ErrorCode.Conflict,
-        message: error.message,
-      }).pipe(Effect.map((body) => ({ status: 409 as const, body })));
+      return {
+        status: 409,
+        body: errorBody({
+          errorCode: ErrorCode.Conflict,
+          message: error.message,
+        }),
+      };
 
     // ---- 409 Conflict (メールアドレスの重複) ----
     case "MailAddressAlreadyExistsError":
-      return errorBody({
-        errorCode: ErrorCode.MailAddressAlreadyExists,
-        message: "メールアドレスが既に使用されています",
-      }).pipe(Effect.map((body) => ({ status: 409 as const, body })));
+      return {
+        status: 409,
+        body: errorBody({
+          errorCode: ErrorCode.MailAddressAlreadyExists,
+          message: "メールアドレスが既に使用されています",
+        }),
+      };
 
     // ---- 500 Internal Server Error ----
     // インフラ由来の失敗。原因 (cause) は外部に露出せず、ログにのみ残す。
     case "RepositoryError":
-      return errorBody({
-        errorCode: ErrorCode.InternalServerError,
-        message: "サーバーで予期せぬエラーが発生しました",
-      }).pipe(Effect.map((body) => ({ status: 500 as const, body })));
+      return {
+        status: 500,
+        body: errorBody({
+          errorCode: ErrorCode.InternalServerError,
+          message: "サーバーで予期せぬエラーが発生しました",
+        }),
+      };
   }
 };

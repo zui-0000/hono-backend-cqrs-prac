@@ -368,14 +368,11 @@ components:
       required:
         - errorCode
         - message
-        - meta
       properties:
         errorCode:
           $ref: '#/components/schemas/ErrorCode'
         message:
           $ref: '#/components/schemas/ErrorMessage'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
         details:
           type: array
           items:
@@ -385,8 +382,6 @@ components:
       examples:
         - errorCode: '4000'
           message: BadRequestError
-          meta:
-            respondedAt: '2025-01-01T12:00:00Z'
           details:
             - field: email
               message: メールアドレスの形式が不正です
@@ -401,14 +396,6 @@ components:
         newPassword:
           $ref: '#/components/schemas/Password'
       title: ChangePasswordRequest
-    CommonResponseMeta:
-      type: object
-      required:
-        - respondedAt
-      properties:
-        respondedAt:
-          $ref: '#/components/schemas/RespondedAt'
-      title: CommonResponseMeta
     CreateUserRequest:
       type: object
       required:
@@ -426,10 +413,10 @@ components:
     CreateUserResponse:
       type: object
       required:
-        - meta
+        - id
       properties:
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
+        id:
+          $ref: '#/components/schemas/UserId'
       title: CreateUserResponse
     ErrorCode:
       type: string
@@ -458,17 +445,6 @@ components:
     GetUserResponse:
       type: object
       required:
-        - result
-        - meta
-      properties:
-        result:
-          $ref: '#/components/schemas/GetUserResult'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
-      title: GetUserResponse
-    GetUserResult:
-      type: object
-      required:
         - name
         - mailAddress
       properties:
@@ -476,27 +452,22 @@ components:
           $ref: '#/components/schemas/UserName'
         mailAddress:
           $ref: '#/components/schemas/MailAddress'
-      title: GetUserResult
+      title: GetUserResponse
     InternalServerError:
       type: object
       required:
         - errorCode
         - message
-        - meta
       properties:
         errorCode:
           $ref: '#/components/schemas/ErrorCode'
         message:
           $ref: '#/components/schemas/ErrorMessage'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
       description: サーバー内部で予期せぬエラーが発生した (汎用)
       title: InternalServerError
       examples:
         - errorCode: '5000'
           message: InternalServerError
-          meta:
-            respondedAt: '2025-01-01T12:00:00Z'
     LoginRequest:
       type: object
       required:
@@ -511,17 +482,6 @@ components:
     LoginResponse:
       type: object
       required:
-        - result
-        - meta
-      properties:
-        result:
-          $ref: '#/components/schemas/LoginResult'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
-      title: LoginResponse
-    LoginResult:
-      type: object
-      required:
         - accessToken
         - refreshToken
       properties:
@@ -529,7 +489,7 @@ components:
           $ref: '#/components/schemas/AccessToken'
         refreshToken:
           $ref: '#/components/schemas/RefreshToken'
-      title: LoginResult
+      title: LoginResponse
     MailAddress:
       type: string
       maxLength: 255
@@ -543,21 +503,16 @@ components:
       required:
         - errorCode
         - message
-        - meta
       properties:
         errorCode:
           $ref: '#/components/schemas/ErrorCode'
         message:
           $ref: '#/components/schemas/ErrorMessage'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
       description: メールアドレスが既に使用されている
       title: MailAddressAlreadyExistsError
       examples:
         - errorCode: '4091'
           message: MailAddressAlreadyExistsError
-          meta:
-            respondedAt: '2025-01-01T12:00:00Z'
     Password:
       type: string
       minLength: 12
@@ -578,22 +533,11 @@ components:
     RefreshResponse:
       type: object
       required:
-        - result
-        - meta
-      properties:
-        result:
-          $ref: '#/components/schemas/RefreshResult'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
-      title: RefreshResponse
-    RefreshResult:
-      type: object
-      required:
         - accessToken
       properties:
         accessToken:
           $ref: '#/components/schemas/AccessToken'
-      title: RefreshResult
+      title: RefreshResponse
     RefreshToken:
       type: string
       minLength: 20
@@ -615,48 +559,31 @@ components:
       required:
         - errorCode
         - message
-        - meta
       properties:
         errorCode:
           $ref: '#/components/schemas/ErrorCode'
         message:
           $ref: '#/components/schemas/ErrorMessage'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
       description: リソースが存在しない (汎用)
       title: ResourceNotFoundError
       examples:
         - errorCode: '4040'
           message: ResourceNotFoundError
-          meta:
-            respondedAt: '2025-01-01T12:00:00Z'
-    RespondedAt:
-      type: string
-      format: date-time
-      description: レスポンス日時 (RFC 3339 / ISO 8601, PostgreSQL TIMESTAMPTZ互換)
-      title: RespondedAt
-      examples:
-        - '2025-01-01T12:00:00Z'
     UnauthorizedError:
       type: object
       required:
         - errorCode
         - message
-        - meta
       properties:
         errorCode:
           $ref: '#/components/schemas/ErrorCode'
         message:
           $ref: '#/components/schemas/ErrorMessage'
-        meta:
-          $ref: '#/components/schemas/CommonResponseMeta'
       description: 認証情報が不正 (汎用)
       title: UnauthorizedError
       examples:
         - errorCode: '4010'
           message: UnauthorizedError
-          meta:
-            respondedAt: '2025-01-01T12:00:00Z'
     UpdateUserRequest:
       type: object
       required:

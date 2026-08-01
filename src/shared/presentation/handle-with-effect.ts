@@ -52,14 +52,12 @@ const handle =
         return yield* validateHeader(c, headerSchema, [REQUEST_ID_HEADER]).pipe(
           Effect.andThen(() => build(c)),
           Effect.flatMap((value) => respond(c, value)),
-          Effect.catchAll((error) =>
-            handleErrorResponse(error).pipe(
-              Effect.tap((response) =>
-                logFailure(c, requestId, response.status, error),
-              ),
-              Effect.map((response) => c.json(response.body, response.status)),
-            ),
-          ),
+          Effect.catchAll((error) => {
+            const response = handleErrorResponse(error);
+            return logFailure(c, requestId, response.status, error).pipe(
+              Effect.map(() => c.json(response.body, response.status)),
+            );
+          }),
         );
       }),
     );

@@ -132,6 +132,8 @@ describe("POST /users", () => {
 
     expect(response.status).toBe(201);
     expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
+    // 採番された id だけを返す (クライアントが GET /users/{id} を呼べるように)。
+    expect(await response.json()).toEqual({ id: FIXED_UUID });
     expect(created).toHaveLength(1);
     // 採番は UuidGenerator 経由なので、テストでは固定値になる。
     expect(created[0]?.id).toBe(FIXED_UUID as UserId);
@@ -179,8 +181,10 @@ describe("GET /users/:id", () => {
     const response = await getUser(runtime, FIXED_UUID);
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      result: { name: dto.name, mailAddress: dto.mailAddress },
+    // 封筒 (result / meta) で包まず、リソースの内容をそのまま返す。
+    expect(await response.json()).toEqual({
+      name: dto.name,
+      mailAddress: dto.mailAddress,
     });
   });
 

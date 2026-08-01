@@ -77,6 +77,25 @@ pnpm dev
 
 契約上 `GET` / `PUT` / `DELETE` は要認証（Bearer）だが、認証は auth コンテキストの実装後に追加する。
 
+**応答は封筒（envelope）で包まない。** リソースの内容をそのまま返す。
+
+```jsonc
+// 200 GET /users/{id}
+{ "name": "アスカ", "mailAddress": "asuka@example.com" }
+// 201 POST /users … 採番された id だけを返す（クライアントが GET を呼べるように）
+{ "id": "019fbf41-5fcd-7000-b147-14f2ed63cf2f" }
+// エラー
+{ "errorCode": "4040", "message": "指定されたユーザーは存在しません" }
+```
+
+以前は `result` / `meta` で包んでいたが、`meta` の中身（`respondedAt`）は HTTP の
+`Date` ヘッダと重複しており、相関 ID も `X-Request-Id` ヘッダで返しているため、
+封筒が情報を何も足していなかった。
+
+`createUser` が id を返すのは、CQRS の「コマンドは値を返さない」原則に対する
+意図的な例外。採番はサーバー側でしか決まらず、返さないとクライアントは作った
+リソースを二度と参照できないため（集約そのものは外に出さない）。
+
 ```zsh
 curl -X POST http://localhost:3000/users \
   -H "Content-Type: application/json" \

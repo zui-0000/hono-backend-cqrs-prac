@@ -8,7 +8,6 @@ import {
   CreateUserHeader,
 } from "~/generated/users";
 import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
-import { metaOnlyBody } from "~/shared/presentation/response";
 import { decodeInput, validateJson } from "~/shared/presentation/validator";
 
 /**
@@ -23,7 +22,8 @@ export const createUserController = handleWithEffect(
       const body = yield* validateJson(c, CreateUserBody);
       const input = yield* decodeInput(CreateUserCommandInput, body);
 
-      yield* createUserCommand(input);
-      return yield* metaOnlyBody;
+      // 採番された id を返す (クライアントが GET /users/{id} を呼べるように)。
+      const id = yield* createUserCommand(input);
+      return { id };
     }),
 );

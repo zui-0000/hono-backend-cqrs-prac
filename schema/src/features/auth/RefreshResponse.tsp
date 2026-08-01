@@ -1,8 +1,6 @@
-import "../../shared/model/index.tsp";
-import "./RefreshResult.tsp";
+import "./model/index.tsp";
 
 @summary("RefreshResponse")
 model RefreshResponse {
-  result: RefreshResult;
-  meta: CommonResponseMeta;
+  accessToken: AccessToken;
 }
