@@ -19,11 +19,9 @@ import { UserRepository } from "../user-repository";
  * 実装 (Drizzle) は知らないため、層の向きは内向きのまま保たれる。
  * I/O を伴うことは戻り値の R (UserRepository) に現れる。
  *
- * なお、これは事前チェックであって強制ではない。同時実行 (TOCTOU) ですり抜けた場合は
- * DB の unique 制約が最後の砦となり、infrastructure が同じエラーへ翻訳する。
- *
- * @param excluding 除外するユーザー。更新時に「自分自身がヒットしただけ」を
- *   重複と誤判定しないために渡す (メールアドレスを変えない更新)。
+ * excluding には重複判定から除外するユーザーを渡す。更新時に
+ * 「自分自身がヒットしただけ」を重複と誤判定しないために必要
+ * (これが無いと、メールアドレスを変えない更新が常に失敗する)。
  */
 export const checkMailAddressDuplication = (
   mailAddress: MailAddress,
@@ -35,10 +33,10 @@ export const checkMailAddressDuplication = (
 > =>
   Effect.gen(function* () {
     const userRepository = yield* UserRepository;
-    const owner = yield* userRepository.findByMailAddress(mailAddress);
+    const user = yield* userRepository.findByMailAddress(mailAddress);
 
     // 誰も使っていない、または使っているのが除外対象本人なら重複ではない。
-    if (Option.isNone(owner) || owner.value.id === options.excluding) return;
+    if (Option.isNone(user) || user.value.id === options.excluding) return;
 
     return yield* new MailAddressAlreadyExistsError({ mailAddress });
   });

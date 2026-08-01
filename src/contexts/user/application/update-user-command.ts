@@ -29,7 +29,7 @@ export const updateUserCommand = (
   Effect.gen(function* () {
     const userRepository = yield* UserRepository;
 
-    // 1. 対象の集約を復元
+    // 1. 対象の集約を復元 (存在しなければ 404)
     const user = yield* userRepository.findById(input.id).pipe(
       Effect.flatMap(
         Option.match({
