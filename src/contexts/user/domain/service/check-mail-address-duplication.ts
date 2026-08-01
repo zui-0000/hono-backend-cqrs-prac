@@ -1,7 +1,9 @@
 import { Effect, Option } from "effect";
+
 import type { MailAddress } from "~/shared/domain/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/error/repository-error";
+
 import type { UserId } from "../model/vo/user-id";
 import { UserRepository } from "../user-repository";
 

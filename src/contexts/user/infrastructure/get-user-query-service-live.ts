@@ -1,9 +1,11 @@
 import { eq } from "drizzle-orm";
 import { Effect, Layer, Option } from "effect";
+
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { db } from "~/shared/db/client";
-import { tUser } from "./drizzle-schema";
 import { RepositoryError } from "~/shared/error/repository-error";
+
+import { tUser } from "./drizzle-schema";
 
 /**
  * GetUserQueryService の Drizzle 実装 (アダプタ)。

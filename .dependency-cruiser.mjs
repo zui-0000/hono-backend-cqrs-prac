@@ -192,9 +192,17 @@ export default {
 
     doNotFollow: { path: "node_modules" },
 
-    // 既知の副作用: tsConfig を指定すると dependency-cruiser が
-    // "missing-typescript-transpiler" を警告する。TypeScript 7 が
-    // 対応バージョン範囲 (>=2 <7) の外にあるため。解析自体は swc が行っており
-    // 実害はない (終了コードも 0)。dependency-cruiser が TS 7 に対応したら消える。
+    // 実行のたびに "missing-typescript-transpiler" が警告として出るが、
+    // これは承知のうえで受け入れている。TypeScript 7 が dependency-cruiser の
+    // 対応範囲 (>=2 <7) の外にあることを知らせているだけで、解析は swc が完遂しており
+    // 実害はない (終了コードも 0)。dependency-cruiser が TS 7 に対応すれば消える。
+    //
+    // 消す手段は検討済み:
+    //   - stdout に出るため 2>/dev/null では消えない
+    //   - tsConfig を外すと ~/* が未解決になりルールが素通りするので外せない
+    //   - enhancedResolveOptions は additionalProperties: false で、
+    //     tsConfig の代わりに別名解決を渡す口が無い
+    //   - pnpm の packageExtensions で dependency-cruiser にだけ typescript@6 を
+    //     持たせると消えるが、node_modules が 24MB 増えるため見送った
   },
 };

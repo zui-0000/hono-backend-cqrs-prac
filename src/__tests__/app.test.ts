@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
+
 import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
+
 import { createApp } from "~/app";
 import type { UserDto } from "~/contexts/user/application/dto";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";

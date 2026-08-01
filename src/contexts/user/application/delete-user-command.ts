@@ -1,6 +1,8 @@
 import { Effect, Option } from "effect";
+
 import type { RepositoryError } from "~/shared/error/repository-error";
 import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
+
 import { UserRepository } from "../domain/user-repository";
 import type { DeleteUserCommandInput } from "./dto";
 

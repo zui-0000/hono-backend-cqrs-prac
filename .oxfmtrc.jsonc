@@ -1,9 +1,21 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  // Prettier 互換のデフォルト整形 (2スペース / 80幅 / セミコロン / ダブルクォート) で運用。
-  // .gitignore と .prettierignore は自動で尊重されるため、追加で除外したいものだけここに書く。
-  // drizzle-kit が生成するマイグレーション (SQL / meta JSON) は整形対象外にする。
-  // schema/ は独立した TypeSpec プロジェクト (tsp format を持つ) のため丸ごと除外する。
-  // (src/generated は .gitignore 済み。orval の afterAllFilesWrite で個別に整形するのでここには含めない)
-  "ignorePatterns": ["src/shared/db/migrations/", "schema/"],
+  // 整形設定は Prettier 互換の既定のまま (2スペース / 80幅 / セミコロン / ダブルクォート)。
+  // .gitignore と .prettierignore は自動で尊重されるので、追加の除外だけをここに書く
+  // (src/generated は gitignore 済みで、orval の afterAllFilesWrite が個別に整形する)。
+  "ignorePatterns": [
+    "src/shared/db/migrations/", // drizzle-kit の生成物 (SQL / meta JSON)
+    "schema/", // TypeSpec の別プロジェクト。整形は tsp format が担う
+  ],
+
+  // import を並べ替える。グループ順は既定のまま (遠い順)。各グループ内は名前順。
+  //```ts
+  //   import { Effect } from "effect";             // 外部パッケージ
+  //
+  //   import { db } from "~/shared/db/client";     // 内部 (~/ は既定で内部扱い)
+  //
+  //   import { tUser } from "./drizzle-schema";    // 相対 (../ ./)
+  //```
+  // 副作用 import (import "dotenv/config") は動かさない。順序自体に意味があるため。
+  "sortImports": true,
 }

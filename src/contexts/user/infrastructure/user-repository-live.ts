@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
+
 import { User } from "~/contexts/user/domain/model/user";
 import { UserHashedPassword } from "~/contexts/user/domain/model/vo/user-hashed-password";
 import { UserId } from "~/contexts/user/domain/model/vo/user-id";
@@ -7,10 +8,11 @@ import { UserName } from "~/contexts/user/domain/model/vo/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
-import { tUser } from "./drizzle-schema";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import { RepositoryError } from "~/shared/error/repository-error";
+
+import { tUser } from "./drizzle-schema";
 
 /** DB 行 → User 集約への復元。DB の値は既に妥当な前提のため decode 失敗は defect 扱い。 */
 const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User> =>

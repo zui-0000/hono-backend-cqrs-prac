@@ -1,7 +1,9 @@
 import { Effect, Schema } from "effect";
+
 import { MailAddress } from "~/shared/domain/mail-address";
 import { now } from "~/shared/service/clock";
 import type { UuidGenerator } from "~/shared/service/uuid-generator";
+
 import { UserHashedPassword } from "./vo/user-hashed-password";
 import { generateUserId, UserId } from "./vo/user-id";
 import { UserName } from "./vo/user-name";

@@ -1,4 +1,5 @@
 import { Data } from "effect";
+
 import type { MailAddress } from "~/shared/domain/mail-address";
 
 /**

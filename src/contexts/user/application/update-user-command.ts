@@ -1,7 +1,9 @@
 import { Effect, Option } from "effect";
+
 import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/error/repository-error";
 import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
+
 import { changeUserProfile } from "../domain/model/user";
 import { checkMailAddressDuplication } from "../domain/service/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";

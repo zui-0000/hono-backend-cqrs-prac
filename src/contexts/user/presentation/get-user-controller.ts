@@ -1,4 +1,5 @@
 import { Effect, Option } from "effect";
+
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import {
   GetUser200Response,
