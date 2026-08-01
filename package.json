@@ -9,7 +9,7 @@
     "check:types": "tsc --noEmit",
     "check:lint": "oxlint -c .oxlintrc.jsonc",
     "check:deps": "depcruise src --config .dependency-cruiser.mjs --output-type err-long",
-    "check:updates": "pnpm outdated --recursive --long",
+    "check:updates": "pnpm outdated --long",
     "format:check": "oxfmt -c .oxfmtrc.jsonc --check",
     "format:fix": "oxfmt -c .oxfmtrc.jsonc",
     "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types && pnpm check:deps",
