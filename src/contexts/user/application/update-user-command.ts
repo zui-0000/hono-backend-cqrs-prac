@@ -1,7 +1,8 @@
 import { Effect, Option } from "effect";
-import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
+import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/error/repository-error";
 import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
+import { ensureMailAddressIsUnique } from "../domain/ensure-mail-address-is-unique";
 import { changeUserProfile } from "../domain/model/user";
 import { UserRepository } from "../domain/user-repository";
 import type { UpdateUserCommandInput } from "./dto";
@@ -42,21 +43,8 @@ export const updateUserCommand = (
     );
 
     // 2. メールアドレスの重複チェック。
-    //    ヒットしたのが自分自身なら重複ではない (メールアドレスを変えない更新)。
-    //    作成時と違い「自分は除く」判定が要るのが更新特有の落とし穴。
-    yield* userRepository.findByMailAddress(input.mailAddress).pipe(
-      Effect.flatMap(
-        Option.match({
-          onNone: () => Effect.void,
-          onSome: (found) =>
-            found.id === user.id
-              ? Effect.void
-              : new MailAddressAlreadyExistsError({
-                  mailAddress: input.mailAddress,
-                }),
-        }),
-      ),
-    );
+    //    自分自身を除外しないと「メールアドレスを変えない更新」が 409 になる。
+    yield* ensureMailAddressIsUnique(input.mailAddress, { excluding: user.id });
 
     // 3. 集約の状態遷移 (元の user は書き換わらない)
     const updated = yield* changeUserProfile(user, {
