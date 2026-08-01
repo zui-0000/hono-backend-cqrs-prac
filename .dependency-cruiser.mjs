@@ -81,21 +81,40 @@ export default {
       to: { path: "^src/contexts/[^/]+/(infrastructure|presentation)/" },
     },
     {
-      name: "inner-layers-not-to-db",
+      name: "presentation-not-to-impl",
+      severity: "error",
+      comment: message({
+        violation: "presentation 層が infrastructure を参照しています。",
+        reason:
+          "controller の仕事は HTTP とユースケースの橋渡しだけです。\n" +
+          "実装を直接掴むと application 層を素通りでき、\n" +
+          "「どの実装を使うか」の決定が合成ルート以外にも散らばります。",
+        fix:
+          "application の command / query を呼びます。\n" +
+          "必要な依存は handleWithEffect が受け取るランタイム経由で解決され、\n" +
+          "実装の結線は src/runtime.ts が行います。",
+      }),
+      from: { path: "^src/contexts/[^/]+/presentation/" },
+      to: { path: "^src/contexts/[^/]+/infrastructure/" },
+    },
+    {
+      name: "db-only-from-infrastructure",
       severity: "error",
       comment: message({
         violation:
-          "domain / application が shared/db (Drizzle) を参照しています。",
+          "domain / application / presentation が shared/db (Drizzle) を参照しています。",
         reason:
-          "「どう保存するか」はポートの向こう側の関心事です。\n" +
-          "内側が DB を知ると、テストに DB が必要になり、\n" +
-          "テーブル定義の変更が業務ルールにまで波及します。",
+          "「どう保存するか」を知ってよいのは infrastructure だけです。\n" +
+          "他の層が DB を知ると、テストに DB が必要になり、\n" +
+          "テーブル定義の変更が業務ルールや HTTP 層にまで波及します。",
         fix:
           "既存のポート (例: UserRepository) を使います。\n" +
           "必要な問い合わせが無ければ、まずポートにメソッドを足し、\n" +
           "その実装を infrastructure/ 側に書きます。",
       }),
-      from: { path: "^src/contexts/[^/]+/(domain|application)/" },
+      from: {
+        path: "^src/contexts/[^/]+/(domain|application|presentation)/",
+      },
       to: { path: "^src/shared/db/" },
     },
     {

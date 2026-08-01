@@ -188,6 +188,26 @@ docs/                   # 設計と学びの記録
 | **oxlint**（`no-restricted-imports` + `overrides`） | import 文の**文字列**                              | エディタ上で即座に気付く速い防波堤     |
 | **dependency-cruiser**（`.dependency-cruiser.mjs`） | tsconfig の `paths` を解決した**実ファイルの依存** | 書き方に依らず取りこぼさない検査の本体 |
 
+どの層が何を触れるか（両ツールで同じ内容を強制している）:
+
+| 参照元 →                           | domain | application | infrastructure | presentation | `shared/db` | `generated` |
+| ---------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
+| **domain**                         |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **application**                    |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **infrastructure**                 |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
+| **presentation**                   |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
+| **shared**                         |   ✗    |      ✗      |       ✗        |      ✗       |      ✓      |      ✗      |
+| **`src/runtime.ts`**（合成ルート） |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
+
+`generated`（API 契約）に触れるのは **presentation だけ**。`shared/db` に触れるのは
+**infrastructure だけ**。他コンテキストについては、内部層（`infrastructure` /
+`presentation`）が一律 ✗ で、ポートのみ参照できる。
+
+> **落とし穴**: oxlint の `overrides` は同名ルールを**マージせず、後に当たったものが丸ごと
+> 置き換える**。層ごとに `override` を 1 つだけ用意し、その層に必要な `group` をすべて
+> 書ききること。実際、当初 `domain` に 2 つの `override` を当てていたため、
+> `domain` からの DB / 生成コード参照が素通りしていた。
+
 両方 `pnpm lint:fix` で走る。とくに **コンテキスト跨ぎのルールは dependency-cruiser にしか書けない**。
 「`contexts/X` は `contexts/Y`（X≠Y）の内部層を import しない」には後方参照が要るため:
 

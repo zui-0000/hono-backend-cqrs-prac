@@ -13,6 +13,21 @@
     // ファイル名は kebab-case (ハイフン繋ぎ) を強制。
     // OS 間の大小事故 (macOS/Windows は大小無視) と命名ブレを防ぐ。
     "unicorn/filename-case": ["error", { "case": "kebabCase" }],
+    // 既定として、生成コード (API 契約) はどこからも使わせない。
+    // 唯一の例外である presentation 層だけ、下の overrides で許可する。
+    // ここに書いておくことで、どの override にも当たらないファイル
+    // (src/main.ts / app.ts / runtime.ts) も覆える。
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["~/generated/**", "**/generated/**"],
+            "message": "生成スキーマ (API 契約) を使ってよいのは presentation 層だけです。契約の型が内側へ漏れると、契約を変えるたびにドメインまで書き換えが波及します。",
+          },
+        ],
+      },
+    ],
   },
   // builtin グローバル (console, URL 等) を認識させる。
   "env": {
@@ -21,13 +36,20 @@
   // orval が生成するコードは lint 対象外 (手で編集しないため)。
   "ignorePatterns": ["src/generated/"],
   // --- 層の境界 (エディタ上で即座に気付くための速い防波堤) ---
+  //
   // no-restricted-imports は import 文の「文字列」を見るため、相対パスと ~ 別名の
   // 両方を書く必要がある。取りこぼしのない厳密な検査は dependency-cruiser
   // (モジュールを解決してから判定する) が担当し、こちらは頻出パターンを速く弾く役。
+  //
+  // 重要: overrides の同名ルールは **マージされず、後に当たったものが丸ごと置き換える**。
+  // そのため層ごとに override を 1 つだけ用意し、その層に必要な group を
+  // すべて書ききる (2 つに分けると先に書いた制約が消える)。
+  // 例: 以前 domain に 2 つの override を当てていたため、
+  //     domain からの DB / generated 参照が素通りしていた。
   "overrides": [
     {
-      // domain / application は「実装」を知らない。使うのはポートだけ。
-      "files": ["src/contexts/*/domain/**", "src/contexts/*/application/**"],
+      // domain は外側をいっさい知らない (依存は常に内向き)。
+      "files": ["src/contexts/*/domain/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -35,11 +57,13 @@
             "patterns": [
               {
                 "group": [
+                  "**/application/**",
+                  "**/presentation/**",
                   "**/infrastructure/**",
                   "~/shared/db/**",
                   "**/shared/db/**",
                 ],
-                "message": "domain / application は実装や DB を知りません。ポート (Context.Tag) 越しに使ってください。",
+                "message": "domain は application / presentation / 実装 / DB を知りません。値なら引数で受け取り、副作用なら domain/ にポート (Context.Tag) を定義してください。",
               },
               {
                 "group": ["~/generated/**", "**/generated/**"],
@@ -51,8 +75,8 @@
       },
     },
     {
-      // domain は上位層を知らない (依存は常に内向き)。
-      "files": ["src/contexts/*/domain/**"],
+      // application は手順だけを決める。実装は知らない。
+      "files": ["src/contexts/*/application/**"],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -60,12 +84,58 @@
             "patterns": [
               {
                 "group": [
-                  "**/application/**",
+                  "**/infrastructure/**",
                   "**/presentation/**",
-                  "../application/**",
-                  "../presentation/**",
+                  "~/shared/db/**",
+                  "**/shared/db/**",
                 ],
-                "message": "domain は application / presentation を知りません。依存の向きは内向きです。",
+                "message": "application は実装や DB を知りません。ポート (Context.Tag) 越しに使い、実装の結線は src/runtime.ts が行います。",
+              },
+              {
+                "group": ["~/generated/**", "**/generated/**"],
+                "message": "生成スキーマ (API 契約) を使ってよいのは presentation 層だけです。",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      // infrastructure は DB を触ってよいが、HTTP と API 契約は知らない。
+      "files": ["src/contexts/*/infrastructure/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["**/presentation/**"],
+                "message": "infrastructure は presentation を知りません。依存の向きは内向きです。",
+              },
+              {
+                "group": ["~/generated/**", "**/generated/**"],
+                "message": "生成スキーマ (API 契約) を使ってよいのは presentation 層だけです。永続化の形は契約と独立に決めます。",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      // presentation は生成スキーマを使ってよい唯一の層。ただし実装は掴まない。
+      "files": ["src/contexts/*/presentation/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/infrastructure/**",
+                  "~/shared/db/**",
+                  "**/shared/db/**",
+                ],
+                "message": "controller は実装や DB を直接掴みません。application の command / query を呼び、実装の結線は src/runtime.ts に任せます。",
               },
             ],
           },
@@ -83,6 +153,10 @@
               {
                 "group": ["~/contexts/**", "**/contexts/**"],
                 "message": "shared から contexts への依存は逆方向です。共有基盤は個別コンテキストを知りません。",
+              },
+              {
+                "group": ["~/generated/**", "**/generated/**"],
+                "message": "生成スキーマ (API 契約) を使ってよいのは presentation 層だけです。",
               },
             ],
           },
