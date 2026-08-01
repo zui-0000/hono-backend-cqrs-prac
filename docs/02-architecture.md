@@ -3,7 +3,47 @@
 ディレクトリの切り方・命名・API 応答の形について、**なぜそうしたか** を残す。
 ここに書いた規約の多くは lint で機械的に強制している（[`03-boundary-enforcement.md`](03-boundary-enforcement.md)）。
 
-ディレクトリツリーそのものは [README](../README.md#ディレクトリ構成) を参照。
+---
+
+## ディレクトリ構成
+
+```text
+schema/                 # TypeSpec による API 契約（OpenAPI 3.1 を出力）
+src/
+├─ main.ts              # エントリ（Bun）。本番の Layer から runtime を作り app に注入
+├─ app.ts               # Hono アプリの組み立て（ルーティング + runtime の注入点）
+├─ runtime.ts           # 合成ルート。Layer の結線（contexts を知る唯一の層）
+├─ contexts/            # 境界づけられたコンテキスト単位で縦に切る
+│  └─ <context>/        #   例: user / auth
+│     ├─ domain/        #     model/（集約・値オブジェクト）, service/（ドメインサービス）, ポート
+│     ├─ application/   #     command / query（CQRS）
+│     ├─ infrastructure/#     テーブル定義 / リポジトリ実装（domain ↔ DB 変換, Layer）
+│     └─ presentation/  #     controller（HTTP ↔ Effect の境界）
+├─ shared/
+│  ├─ domain/           # コンテキストを跨ぐ値オブジェクト（Uuid / MailAddress / Password）
+│  ├─ error/            # API エラーカタログ（errorCode 体系と型付きエラー）
+│  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
+│  ├─ service/          # 横断サービス（採番・ハッシュ化）のポートと実装
+│  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）
+├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
+└─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）
+docs/                   # 設計と学びの記録
+```
+
+要点を先に挙げると:
+
+- **依存の向きは常に内向き。** 「どの実装を使うか」を知るのは `src/runtime.ts`（合成ルート）だけ。
+  controller は `createApp(runtime)` 経由でランタイムを受け取るため、テストでは Layer を
+  差し替えて DB なしで HTTP 境界ごと検証できる。
+- **コンテキストを跨ぐ参照はポート（`domain/`・`application/` の interface）に限る。**
+  他コンテキストの `infrastructure/` は直接 import しない。書き込みは必ず所有コンテキストの
+  command を通す。
+- **バレル（再エクスポート専用の `index.ts`）は置かない**（`src` 配下に 0 個）。
+  代わりにエクスポート名を単体で読める形にする（`UserId` / `createUser` / `UserRepositoryLive`）。
+- **上記はすべて lint で強制している。** 破ると `pnpm lint:fix` が落ちる
+  （[`03-boundary-enforcement.md`](03-boundary-enforcement.md)）。
+
+以下、それぞれの判断の理由。
 
 ---
 
@@ -66,7 +106,7 @@ export const UserId = Uuid.pipe(Schema.brand("User.Id"));
 
 ### ポートの実装 → 「ポート名 + `Live`」
 
-```
+```text
 domain/user-repository.ts              ポート
 infrastructure/user-repository-live.ts 実装（export: UserRepositoryLive）
 ```
@@ -79,7 +119,7 @@ infrastructure/user-repository-live.ts 実装（export: UserRepositoryLive）
 
 ### ポートを持たない技術固有の資産 → 「技術名」
 
-```
+```text
 infrastructure/drizzle-schema.ts   テーブル定義（export: tUser）
 ```
 
