@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { createUserController } from "~/contexts/user/presentation/create-user-controller";
+import { deleteUserController } from "~/contexts/user/presentation/delete-user-controller";
 import { getUserController } from "~/contexts/user/presentation/get-user-controller";
+import { updateUserController } from "~/contexts/user/presentation/update-user-controller";
 import type { AppRuntime } from "~/runtime";
 
 /**
@@ -17,6 +19,8 @@ export const createApp = (runtime: AppRuntime) => {
 
   app.post("/users", createUserController(runtime));
   app.get("/users/:id", getUserController(runtime));
+  app.put("/users/:id", updateUserController(runtime));
+  app.delete("/users/:id", deleteUserController(runtime));
 
   return app;
 };

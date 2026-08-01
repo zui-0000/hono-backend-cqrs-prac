@@ -50,6 +50,7 @@ namespace BackendApi {
       | BadRequestErrorResponse
       | UnauthorizedErrorResponse
       | NotFoundErrorResponse
+      | MailAddressAlreadyExistsErrorResponse
       | InternalServerErrorResponse;
 
     /** ユーザーを削除する (要認証) */

@@ -23,11 +23,28 @@ const FIXED_UUID = "019fa5bc-0000-7000-8000-000000000000";
 
 const REQUEST_ID = "019fa5bc-1111-7000-8000-000000000000";
 
+/** 別人を表す id。「自分自身との重複」と「他人との重複」を区別するために使う。 */
+const OTHER_UUID = "019fa5bc-2222-7000-8000-000000000000";
+
 const validBody = {
   name: "アスカ",
   mailAddress: "asuka@example.com",
   password: "SuperSecret123!",
 };
+
+/** 既に永続化されている User 集約。作成/更新日時は 0 に固定して差分を見やすくする。 */
+const makeUser = (
+  params: { readonly id?: string; readonly mailAddress?: string } = {},
+): User.Model => ({
+  id: Schema.decodeSync(User.Id)(params.id ?? FIXED_UUID),
+  name: Schema.decodeSync(User.Name)("既存ユーザー"),
+  mailAddress: Schema.decodeSync(MailAddress)(
+    params.mailAddress ?? "existing@example.com",
+  ),
+  hashedPassword: Schema.decodeSync(User.HashedPassword)("hashed"),
+  createdAt: new Date(0),
+  updatedAt: new Date(0),
+});
 
 /** テスト用ランタイム。検証したいサービスだけケースごとに部分差し替えする。 */
 const makeRuntime = (
@@ -77,6 +94,23 @@ const postUsers = async (
 const getUser = async (runtime: AppRuntime, id: string): Promise<Response> =>
   await createApp(runtime).request(`/users/${id}`, { headers });
 
+const putUser = async (
+  runtime: AppRuntime,
+  id: string,
+  body: Record<string, unknown>,
+): Promise<Response> =>
+  await createApp(runtime).request(`/users/${id}`, {
+    method: "PUT",
+    headers,
+    body: JSON.stringify(body),
+  });
+
+const deleteUser = async (runtime: AppRuntime, id: string): Promise<Response> =>
+  await createApp(runtime).request(`/users/${id}`, {
+    method: "DELETE",
+    headers,
+  });
+
 describe("POST /users", () => {
   test("正常系: 201 を返し、ハッシュ済みの User を永続化する", async () => {
     const created: User.Model[] = [];
@@ -103,14 +137,7 @@ describe("POST /users", () => {
   });
 
   test("異常系: メールアドレス重複は 409 (errorCode 4091)", async () => {
-    const existing: User.Model = {
-      id: Schema.decodeSync(User.Id)(FIXED_UUID),
-      name: Schema.decodeSync(User.Name)("既存ユーザー"),
-      mailAddress: Schema.decodeSync(MailAddress)(validBody.mailAddress),
-      hashedPassword: Schema.decodeSync(User.HashedPassword)("hashed"),
-      createdAt: new Date(0),
-      updatedAt: new Date(0),
-    };
+    const existing = makeUser({ mailAddress: validBody.mailAddress });
     const runtime = makeRuntime({
       userRepository: {
         findByMailAddress: () => Effect.succeed(Option.some(existing)),
@@ -162,6 +189,153 @@ describe("GET /users/:id", () => {
 
   test("異常系: uuid v7 形式でない id は 400 と該当フィールド", async () => {
     const response = await getUser(makeRuntime(), "not-a-uuid");
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      errorCode: "4000",
+      details: [{ field: "id" }],
+    });
+  });
+});
+
+describe("PUT /users/:id", () => {
+  const updateBody = {
+    name: "アスカ・改",
+    mailAddress: "asuka.new@example.com",
+  };
+
+  test("正常系: 204 を返し、更新後の集約を永続化する", async () => {
+    const existing = makeUser();
+    const updated: User.Model[] = [];
+    const runtime = makeRuntime({
+      userRepository: {
+        findById: () => Effect.succeed(Option.some(existing)),
+        update: (user) =>
+          Effect.sync(() => {
+            updated.push(user);
+          }),
+      },
+    });
+
+    const response = await putUser(runtime, FIXED_UUID, updateBody);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
+    // 204 は本文を持たない。
+    expect(await response.text()).toBe("");
+
+    expect(updated).toHaveLength(1);
+    expect(updated[0]?.name).toBe(updateBody.name as User.Name);
+    expect(updated[0]?.mailAddress).toBe(updateBody.mailAddress as MailAddress);
+    // changeProfile が触らない項目はそのまま引き継がれる。
+    expect(updated[0]?.id).toBe(existing.id);
+    expect(updated[0]?.hashedPassword).toBe(existing.hashedPassword);
+    expect(updated[0]?.createdAt).toEqual(existing.createdAt);
+    // updatedAt だけが進む。
+    expect(updated[0]?.updatedAt.getTime()).toBeGreaterThan(
+      existing.updatedAt.getTime(),
+    );
+    // 元の集約は書き換わらない (イミュータブル)。
+    expect(existing.name).toBe("既存ユーザー" as User.Name);
+  });
+
+  test("正常系: メールアドレスを変えない更新は重複扱いにしない", async () => {
+    // 自分自身が findByMailAddress にヒットする状況。
+    const existing = makeUser({ mailAddress: updateBody.mailAddress });
+    const runtime = makeRuntime({
+      userRepository: {
+        findById: () => Effect.succeed(Option.some(existing)),
+        findByMailAddress: () => Effect.succeed(Option.some(existing)),
+      },
+    });
+
+    const response = await putUser(runtime, FIXED_UUID, updateBody);
+
+    expect(response.status).toBe(204);
+  });
+
+  test("異常系: 他人が使っているメールアドレスは 409 (errorCode 4091)", async () => {
+    const runtime = makeRuntime({
+      userRepository: {
+        findById: () => Effect.succeed(Option.some(makeUser())),
+        findByMailAddress: () =>
+          Effect.succeed(
+            Option.some(
+              makeUser({ id: OTHER_UUID, mailAddress: updateBody.mailAddress }),
+            ),
+          ),
+      },
+    });
+
+    const response = await putUser(runtime, FIXED_UUID, updateBody);
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ errorCode: "4091" });
+  });
+
+  test("異常系: 存在しない id は 404 (errorCode 4040)", async () => {
+    // 既定の fake は findById が Option.none を返す。
+    const response = await putUser(makeRuntime(), FIXED_UUID, updateBody);
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ errorCode: "4040" });
+  });
+
+  test("異常系: 契約に反するボディは 400 と該当フィールド", async () => {
+    const response = await putUser(makeRuntime(), FIXED_UUID, {
+      ...updateBody,
+      mailAddress: "not-a-mail",
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      errorCode: "4000",
+      details: [{ field: "mailAddress" }],
+    });
+  });
+});
+
+describe("DELETE /users/:id", () => {
+  test("正常系: 204 を返し、対象の id を削除する", async () => {
+    const deleted: string[] = [];
+    const runtime = makeRuntime({
+      userRepository: {
+        findById: () => Effect.succeed(Option.some(makeUser())),
+        deleteById: (id) =>
+          Effect.sync(() => {
+            deleted.push(id);
+          }),
+      },
+    });
+
+    const response = await deleteUser(runtime, FIXED_UUID);
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
+    expect(await response.text()).toBe("");
+    expect(deleted).toEqual([FIXED_UUID as User.Id]);
+  });
+
+  test("異常系: 存在しない id は 404 で、削除も走らない", async () => {
+    const deleted: string[] = [];
+    const runtime = makeRuntime({
+      userRepository: {
+        deleteById: (id) =>
+          Effect.sync(() => {
+            deleted.push(id);
+          }),
+      },
+    });
+
+    const response = await deleteUser(runtime, FIXED_UUID);
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({ errorCode: "4040" });
+    expect(deleted).toEqual([]);
+  });
+
+  test("異常系: uuid v7 形式でない id は 400 と該当フィールド", async () => {
+    const response = await deleteUser(makeRuntime(), "not-a-uuid");
 
     expect(response.status).toBe(400);
     expect(await response.json()).toMatchObject({

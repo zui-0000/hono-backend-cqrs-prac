@@ -43,3 +43,28 @@ export const create = (params: {
       updatedAt: timestamp,
     })),
   );
+
+/**
+ * プロフィール (名前・メールアドレス) を変更した集約を返す。
+ *
+ * 元の Model は書き換えず、更新後の値と新しい updatedAt を持つ別の Model を返す
+ * (イミュータブルな状態遷移)。呼び出し側が古い集約を握り続けても、
+ * 意図せず変更が波及しない。
+ *
+ * API 契約が PUT (対象項目をすべて送る全置換) なので、部分更新ではなく
+ * 「変更後の値で差し替える」操作として表現する。
+ * id / createdAt / hashedPassword は変わらないため引数に取らない
+ * (パスワード変更は本人確認を伴う別の操作)。
+ */
+export const changeProfile = (
+  user: Model,
+  params: { name: Name; mailAddress: MailAddress },
+): Effect.Effect<Model> =>
+  now.pipe(
+    Effect.map((timestamp) => ({
+      ...user,
+      name: params.name,
+      mailAddress: params.mailAddress,
+      updatedAt: timestamp,
+    })),
+  );

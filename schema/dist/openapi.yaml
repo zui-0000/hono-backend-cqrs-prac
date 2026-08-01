@@ -232,6 +232,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResourceNotFoundError'
+        '409':
+          description: メールアドレスが既に使用されている
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailAddressAlreadyExistsError'
         '500':
           description: サーバーエラー (汎用)
           content:

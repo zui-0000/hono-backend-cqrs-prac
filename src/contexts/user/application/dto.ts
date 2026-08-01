@@ -28,6 +28,28 @@ export const CreateUserCommandInput = Schema.Struct({
 });
 export type CreateUserCommandInput = typeof CreateUserCommandInput.Type;
 
+/**
+ * ユーザー更新の入力。
+ * id はパスパラメータ、それ以外はボディ由来だが、ユースケースから見れば
+ * 入力は 1 つなので合成した形で定義する (組み立ては presentation 層の責務)。
+ */
+export const UpdateUserCommandInput = Schema.Struct({
+  id: User.Id,
+  name: User.Name,
+  mailAddress: MailAddress,
+});
+export type UpdateUserCommandInput = typeof UpdateUserCommandInput.Type;
+
+/**
+ * ユーザー削除の入力。項目が id だけでも Struct で定義するのは、
+ * 生成スキーマの UserId (API 契約の brand) をドメインの User.Id へ
+ * 変換する経路を、他のコマンドと同じ形に揃えるため。
+ */
+export const DeleteUserCommandInput = Schema.Struct({
+  id: User.Id,
+});
+export type DeleteUserCommandInput = typeof DeleteUserCommandInput.Type;
+
 // ---- 出力 (Query) ----
 
 /**

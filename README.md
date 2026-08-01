@@ -65,8 +65,17 @@ pnpm db:migrate
 pnpm dev
 ```
 
-- `GET /health` … `{"status":"ok"}`
-- `POST /users` … ユーザー作成（`X-Request-Id` ヘッダに UUID v7 が必須）
+実装済みのエンドポイント（`/health` を除き `X-Request-Id` ヘッダに UUID v7 が必須）:
+
+| メソッド | パス          | 内容                     | 成功時 |
+| -------- | ------------- | ------------------------ | ------ |
+| `GET`    | `/health`     | ヘルスチェック           | 200    |
+| `POST`   | `/users`      | ユーザー作成             | 201    |
+| `GET`    | `/users/{id}` | ユーザー取得（クエリ側） | 200    |
+| `PUT`    | `/users/{id}` | ユーザー更新             | 204    |
+| `DELETE` | `/users/{id}` | ユーザー削除             | 204    |
+
+契約上 `GET` / `PUT` / `DELETE` は要認証（Bearer）だが、認証は auth コンテキストの実装後に追加する。
 
 ```zsh
 curl -X POST http://localhost:3000/users \
