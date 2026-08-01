@@ -8,10 +8,11 @@
     "test": "bun test",
     "check:types": "tsc --noEmit",
     "check:lint": "oxlint -c .oxlintrc.jsonc",
+    "check:deps": "depcruise src --config .dependency-cruiser.mjs --output-type err-long",
     "check:updates": "pnpm outdated --recursive --long",
     "format:check": "oxfmt -c .oxfmtrc.jsonc --check",
     "format:fix": "oxfmt -c .oxfmtrc.jsonc",
-    "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types",
+    "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types && pnpm check:deps",
     "generate:api": "orval",
     "prepare": "pnpm generate:api",
     "db:generate": "drizzle-kit generate --config ./src/shared/db/drizzle.config.ts",
@@ -24,7 +25,9 @@
     "hono": "^4.12.33"
   },
   "devDependencies": {
+    "@swc/core": "^1.15.47",
     "@types/bun": "^1.3.14",
+    "dependency-cruiser": "^18.1.0",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "orval": "^8.23.0",

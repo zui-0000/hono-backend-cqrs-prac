@@ -46,19 +46,28 @@
 ```text
 src/shared/db/
 ├─ client.ts          # 接続クライアント（bun-sql）
-├─ schema.ts          # 全テーブル定義を一元管理
+├─ error.ts           # SQLSTATE 判定ヘルパー
 ├─ drizzle.config.ts  # drizzle-kit 設定
 ├─ scripts/
 │  └─ migrate.ts      # ランタイムマイグレータ（bun-sql）
 └─ migrations/        # 生成 SQL + meta（git 管理）
+
+src/contexts/<context>/infrastructure/
+└─ drizzle-schema.ts  # そのコンテキストが所有するテーブル定義
 ```
 
-- **スキーマを 1 ファイルに集約した理由**: 物理 DB は共有インフラで、FK が境界を跨ぐ。
-  一望できて関係整合も扱いやすい。
-- **ドメインモデル（集約・値オブジェクト）は `contexts/<context>/domain/` にコンテキストごとで残す**。
-  DDD の芯（境界ごとのドメイン分離）はそちらで守る。テーブル↔ドメインの変換は
-  `contexts/<context>/infrastructure/` の repository が担い、`~/shared/db/schema` を import する
-  （contexts → shared の正しい依存方向）。
+- **`shared/db/` はテーブル定義を持たない**。ここに入るのは「物理 DB という 1 つの外部リソース」
+  に関する共有物だけ（接続・エラー判定・マイグレーション基盤）。アダプタは各コンテキストにある。
+- **テーブル定義は所有するコンテキストの `infrastructure/drizzle-schema.ts` に置く**。集約（`User`）と
+  保存先（`t_user`）の所有者を揃えるため。共有の 1 ファイルに集約すると、他コンテキストが
+  `db.update(tUser)` を直接書けてしまい、「書き込みは所有コンテキストの command を通す」という
+  規約を構造が何も守らなくなる。分けておけば越境が import 文に現れ、lint で機械的に禁じられる。
+- **物理 DB とマイグレーションは 1 つのまま**。drizzle-kit の `schema` は glob / 配列を取れるため
+  （`"./src/contexts/*/infrastructure/drizzle-schema.ts"`）、ファイルを分けても migration は
+  全テーブルをまとめて 1 系列（`out`）で管理できる。境界を跨ぐ FK も、
+  相手コンテキストの `drizzle-schema.ts` を import すれば書ける（その依存が可視化されるのが利点）。
+- **ドメインモデル（集約・値オブジェクト）は `contexts/<context>/domain/` に置く**。
+  テーブル↔ドメインの変換は同じコンテキストの `infrastructure/` の repository が担う。
 
 ---
 
@@ -108,7 +117,7 @@ src/shared/db/
 ### generate と migrate は分ける
 
 ```text
-schema.ts 編集
+drizzle-schema.ts 編集
   → pnpm db:generate --name <name>   # TS → SQL 生成（DB 不要・差分計算）
   → 生成 SQL をレビュー
   → pnpm db:migrate                  # SQL を DB に適用（冪等）
@@ -133,7 +142,7 @@ DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose st
 
 ### migrations は git 管理する
 
-- **`schema.ts` = 目的地、`migrations/` = そこへ至る道順**。既存データを壊さず変化させるには
+- **`drizzle-schema.ts` = 目的地、`migrations/` = そこへ至る道順**。既存データを壊さず変化させるには
   道順（順序付き SQL）が要る。schema だけでは足りない。
 - `meta/`（スナップショット・目録）も **セットでコミット**（次回 generate の差分基準になるため）。
 - append-only で増えていくのが正常。ただし **どの DB にも適用していない間（pre-prod）は

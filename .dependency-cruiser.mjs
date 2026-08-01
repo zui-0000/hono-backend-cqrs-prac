@@ -1,0 +1,181 @@
+/**
+ * 依存関係の構造ルール (dependency-cruiser)。
+ *
+ * oxlint の no-restricted-imports は import 文の「文字列」を見るだけなので、
+ * 相対パスと別名の書き分けを取りこぼしうる。こちらは tsconfig の paths を解決して
+ * 実ファイル同士の依存として判定するため、書き方に依らず必ず捕まえられる。
+ *
+ * さらに oxlint では表現できない「コンテキスト跨ぎ」を、from の丸括弧を
+ * to 側で $1 として参照する後方参照で 1 ルールとして書ける。
+ * コンテキストが増えても組み合わせ (n^2) の宣言が要らないのが利点。
+ *
+ * comment は違反時にそのまま端末へ出るメッセージ。規約を知らない人がその場で直せるよう
+ * 「何が起きたか / なぜ禁止か / どう直すか」の 3 点を必ず書く。
+ * 行頭の字下げはレポーター側で揃えられるため、ソースでは付けない。
+ * 表示には err-long レポーターが必要 (既定の err は comment を出さない)。
+ * package.json の check:deps で --output-type err-long を指定している。
+ */
+
+/** コンテキスト内部の層 (他コンテキストから触られてはいけない)。 */
+const INTERNAL_LAYERS = "(infrastructure|presentation)";
+
+/** 違反メッセージを 3 部構成に揃えるためのヘルパー。 */
+const message = ({ violation, reason, fix }) =>
+  [`【違反】${violation}`, `【理由】${reason}`, `【対処】${fix}`].join("\n");
+
+export default {
+  forbidden: [
+    {
+      name: "no-circular",
+      severity: "error",
+      comment: message({
+        violation: "モジュールが循環参照になっています。",
+        reason:
+          "循環は「本来 1 つであるべき責務が 2 ファイルに分かれている」か\n" +
+          "「依存の向きが逆のものが混ざっている」サインです。\n" +
+          "初期化順に依存する壊れ方をするため、実行時まで問題が表面化しません。",
+        fix:
+          "共通して必要な部分を第 3 のモジュールへ切り出し、双方がそれを参照する形にします。\n" +
+          "あるいは、どちらが内側かを決めて依存を一方向に倒します。",
+      }),
+      from: {},
+      to: { circular: true },
+    },
+
+    // ---- 層の向き (常に内向き) ----
+    {
+      name: "domain-not-to-outer",
+      severity: "error",
+      comment: message({
+        violation:
+          "domain 層が application / infrastructure / presentation を参照しています。",
+        reason:
+          "ドメインは HTTP もユースケースも DB も知らずに成立すべき層です。\n" +
+          "外側を知ると、ドメインだけを取り出して読む・テストすることができなくなり、\n" +
+          "「業務ルールがどこに書いてあるか」が追えなくなります。",
+        fix:
+          "必要なのが値なら引数で受け取ります (呼び出し側が用意する)。\n" +
+          "必要なのが副作用なら domain/ にポート (Context.Tag) を定義し、\n" +
+          "実装は infrastructure/ に置いて Layer で注入します。",
+      }),
+      from: { path: "^src/contexts/[^/]+/domain/" },
+      to: {
+        path: "^src/contexts/[^/]+/(application|infrastructure|presentation)/",
+      },
+    },
+    {
+      name: "application-not-to-impl",
+      severity: "error",
+      comment: message({
+        violation:
+          "application 層が infrastructure / presentation を参照しています。",
+        reason:
+          "application は「何を、どの順でやるか」だけを決める層で、実装の詳細は持ちません。\n" +
+          "実装を直接掴むとテストで差し替えられなくなり、\n" +
+          "DB やフレームワークを替えただけでユースケースが壊れます。",
+        fix:
+          "ポート (domain/ の Repository や application/ の QueryService) 越しに使います。\n" +
+          "どの実装を使うかを決めるのは合成ルート (src/runtime.ts) だけです。",
+      }),
+      from: { path: "^src/contexts/[^/]+/application/" },
+      to: { path: "^src/contexts/[^/]+/(infrastructure|presentation)/" },
+    },
+    {
+      name: "inner-layers-not-to-db",
+      severity: "error",
+      comment: message({
+        violation:
+          "domain / application が shared/db (Drizzle) を参照しています。",
+        reason:
+          "「どう保存するか」はポートの向こう側の関心事です。\n" +
+          "内側が DB を知ると、テストに DB が必要になり、\n" +
+          "テーブル定義の変更が業務ルールにまで波及します。",
+        fix:
+          "既存のポート (例: UserRepository) を使います。\n" +
+          "必要な問い合わせが無ければ、まずポートにメソッドを足し、\n" +
+          "その実装を infrastructure/ 側に書きます。",
+      }),
+      from: { path: "^src/contexts/[^/]+/(domain|application)/" },
+      to: { path: "^src/shared/db/" },
+    },
+    {
+      name: "generated-only-from-presentation",
+      severity: "error",
+      comment: message({
+        violation:
+          "presentation 以外の層が src/generated (API 契約の生成コード) を参照しています。",
+        reason:
+          "生成コードは API 契約の写しであって、ドメインの語彙ではありません。\n" +
+          "内側に漏らすと契約を変えるたびにドメインまで書き換えが波及し、\n" +
+          "「契約の都合」と「業務の都合」が混ざります。",
+        fix:
+          "presentation で契約スキーマを検証し (validateJson / validateParams)、\n" +
+          "decodeInput でドメインの型 (値オブジェクト) に変換してから内側へ渡します。",
+      }),
+      from: { pathNot: "^(src/contexts/[^/]+/presentation/|src/generated/)" },
+      to: { path: "^src/generated/" },
+    },
+
+    // ---- 共有基盤の向き ----
+    {
+      name: "shared-not-to-contexts",
+      severity: "error",
+      comment: message({
+        violation:
+          "shared (共有基盤) が contexts を参照しています。依存が逆向きです。",
+        reason:
+          "共有基盤が個別コンテキストを知ると、コンテキストを 1 つ増やすたびに\n" +
+          "shared を書き換えることになり、共有基盤が全体の変更点になります。",
+        fix:
+          "向きを逆にします (contexts が shared を使う)。\n" +
+          "実装同士の結線が必要な場合に限り、合成ルート (src/runtime.ts) に書きます。\n" +
+          "contexts を import してよいのはこのファイルだけです。",
+      }),
+      from: { path: "^src/shared/" },
+      to: { path: "^src/contexts/" },
+    },
+
+    // ---- コンテキストの境界 (oxlint では表現できない後方参照) ----
+    {
+      name: "no-cross-context-internals",
+      severity: "error",
+      comment: message({
+        violation:
+          "他コンテキストの infrastructure / presentation を直接参照しています。",
+        reason:
+          "それらは境界の内側にある実装で、外から使われる前提がありません。\n" +
+          "直接触ると相手の内部変更で壊れ、境界を分けた意味が無くなります。\n" +
+          "(テーブル定義を直接掴むと、相手の command を通さない書き込みも可能になります)",
+        fix:
+          "相手コンテキストが公開しているポート (domain/・application/ の interface) を参照します。\n" +
+          "必要なポートが無ければ相手側に用意してもらいます\n" +
+          "(DDD の Customer/Supplier: 使う側の要求を供給側が受けて公開する)。",
+      }),
+      from: { path: "^src/contexts/([^/]+)/" },
+      to: {
+        path: `^src/contexts/([^/]+)/${INTERNAL_LAYERS}/`,
+        pathNot: "^src/contexts/$1/",
+      },
+    },
+  ],
+
+  options: {
+    // パーサーに swc を使う。dependency-cruiser 18.1.0 の tsc パーサーは
+    // typescript@>=2 <7 しかサポートしておらず、本プロジェクトの TypeScript 7 では
+    // 1 ファイルも解析できない (0 modules cruised になる)。
+    // swc は TS の構文解析を自前で行うため TS のバージョンに縛られない。
+    // import type も (tsPreCompilationDeps を付けなくても) 依存として拾う。
+    parser: "swc",
+
+    // tsconfig の paths (~/* → ./src/*) を解決させる。
+    // これが無いと "~/shared/..." が未解決のままになり、ルールが素通りする。
+    tsConfig: { fileName: "tsconfig.json" },
+
+    doNotFollow: { path: "node_modules" },
+
+    // 既知の副作用: tsConfig を指定すると dependency-cruiser が
+    // "missing-typescript-transpiler" を警告する。TypeScript 7 が
+    // 対応バージョン範囲 (>=2 <7) の外にあるため。解析自体は swc が行っており
+    // 実害はない (終了コードも 0)。dependency-cruiser が TS 7 に対応したら消える。
+  },
+};

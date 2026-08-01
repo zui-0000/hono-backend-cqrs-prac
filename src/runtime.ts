@@ -1,6 +1,6 @@
 import { Layer, type ManagedRuntime } from "effect";
-import { GetUserQueryServiceLive } from "~/contexts/user/infrastructure/get-user-query-service";
-import { UserRepositoryLive } from "~/contexts/user/infrastructure/user-repository";
+import { GetUserQueryServiceLive } from "~/contexts/user/infrastructure/get-user-query-service-live";
+import { UserRepositoryLive } from "~/contexts/user/infrastructure/user-repository-live";
 import { PasswordHasherLive } from "~/shared/service/password-hasher";
 import { UuidGeneratorLive } from "~/shared/service/uuid-generator";
 

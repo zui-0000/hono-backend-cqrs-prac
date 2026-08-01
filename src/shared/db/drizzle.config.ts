@@ -5,8 +5,10 @@ import { defineConfig } from "drizzle-kit";
 // 設定ファイルもここに置く。schema / out のパスはコマンド実行時の CWD
 // (リポジトリルート) 基準で解決される点に注意。
 export default defineConfig({
-  // テーブル定義はバックエンド全体で 1 ファイルに集約する (物理DBは共有インフラのため)。
-  schema: "./src/shared/db/schema.ts",
+  // テーブル定義は所有するコンテキストの infrastructure に置く (集約と所有者を揃える)。
+  // drizzle-kit は schema に glob / 配列を取れるため、分割しても migration は
+  // 全テーブルをまとめて 1 系列 (out) で管理できる。
+  schema: "./src/contexts/*/infrastructure/drizzle-schema.ts",
   out: "./src/shared/db/migrations",
   dialect: "postgresql",
   dbCredentials: {

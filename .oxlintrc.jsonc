@@ -20,4 +20,74 @@
   },
   // orval が生成するコードは lint 対象外 (手で編集しないため)。
   "ignorePatterns": ["src/generated/"],
+  // --- 層の境界 (エディタ上で即座に気付くための速い防波堤) ---
+  // no-restricted-imports は import 文の「文字列」を見るため、相対パスと ~ 別名の
+  // 両方を書く必要がある。取りこぼしのない厳密な検査は dependency-cruiser
+  // (モジュールを解決してから判定する) が担当し、こちらは頻出パターンを速く弾く役。
+  "overrides": [
+    {
+      // domain / application は「実装」を知らない。使うのはポートだけ。
+      "files": ["src/contexts/*/domain/**", "src/contexts/*/application/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/infrastructure/**",
+                  "~/shared/db/**",
+                  "**/shared/db/**",
+                ],
+                "message": "domain / application は実装や DB を知りません。ポート (Context.Tag) 越しに使ってください。",
+              },
+              {
+                "group": ["~/generated/**", "**/generated/**"],
+                "message": "生成スキーマ (API 契約) を使ってよいのは presentation 層だけです。",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      // domain は上位層を知らない (依存は常に内向き)。
+      "files": ["src/contexts/*/domain/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/application/**",
+                  "**/presentation/**",
+                  "../application/**",
+                  "../presentation/**",
+                ],
+                "message": "domain は application / presentation を知りません。依存の向きは内向きです。",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
+      // shared は contexts を知らない。合成ルート (src/runtime.ts) だけが実装を知る。
+      "files": ["src/shared/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["~/contexts/**", "**/contexts/**"],
+                "message": "shared から contexts への依存は逆方向です。共有基盤は個別コンテキストを知りません。",
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
 }

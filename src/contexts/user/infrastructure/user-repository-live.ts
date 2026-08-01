@@ -7,7 +7,7 @@ import { UserName } from "~/contexts/user/domain/model/vo/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
-import { tUser } from "~/shared/db/schema";
+import { tUser } from "./drizzle-schema";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import { RepositoryError } from "~/shared/error/repository-error";

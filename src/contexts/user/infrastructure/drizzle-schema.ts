@@ -1,5 +1,18 @@
 import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 
+/**
+ * user コンテキストが所有するテーブル定義 (Drizzle スキーマ)。
+ *
+ * テーブルは所有するコンテキストの infrastructure に置く。集約 (User) と
+ * その保存先 (t_user) の所有者を一致させることで、他コンテキストが
+ * 直接この表を書き換える経路が「他コンテキストの infrastructure を import する」
+ * という目に見える形になり、lint で機械的に禁じられる。
+ *
+ * 物理 DB とマイグレーションは 1 つ (shared/db/) のまま。
+ * drizzle-kit は schema に glob を取れるので、コンテキストごとに分割しても
+ * migration は全テーブルをまとめて 1 系列で管理できる。
+ */
+
 // 識別子はアプリ側 (ドメインの生成ファクトリ) で Bun.randomUUIDv7() を採番する。
 // 集約が生成時点で identity を持つ DDD 王道の戦略のため、DB 側の DEFAULT は付けない。
 export const tUser = pgTable("t_user", {

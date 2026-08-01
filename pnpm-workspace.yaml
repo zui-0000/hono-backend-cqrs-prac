@@ -1,5 +1,9 @@
 # pnpm の設定ファイル (pnpm 11 で package.json の "pnpm" フィールドから移設)。
 # allowBuilds: postinstall 等のビルドスクリプト実行を明示許可するパッケージ。
 #   drizzle-kit が依存する esbuild は TS 設定の解析にネイティブバイナリが必要なため許可する。
+#   @swc/core は dependency-cruiser のパーサー (TypeScript 7 では tsc パーサーが使えないため)。
+#   その postinstall はネイティブバイナリが読めるかの検証で、読めない環境でのみ
+#   wasm 版を入れるフォールバック。native binding が動く環境では実質 no-op。
 allowBuilds:
+  "@swc/core": true
   esbuild: true
