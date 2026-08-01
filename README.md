@@ -127,6 +127,9 @@ curl -X POST http://localhost:3000/users \
 ### スキーマ（TypeSpec / `schema/` 別プロジェクト）
 
 `schema/` は API 契約を TypeSpec で定義する独立プロジェクト。
+ディレクトリの切り方は `src/` と揃えてある（`schema/src/contexts/<context>/` と
+`schema/src/shared/`）。契約とコードで同じ語彙・同じ区切りを使うことで、
+「この endpoint はどのコンテキストの持ち物か」が両側で一致する。
 
 | script                  | 内容                                                 |
 | ----------------------- | ---------------------------------------------------- |
@@ -252,6 +255,17 @@ to: {
 - コンテキストを跨ぐ参照は**ポート（`domain/`・`application/` の interface）に限る**。
   他コンテキストの `infrastructure/` を直接 import しない。書き込み（集約の変更）は
   必ず所有コンテキストの command を通す。
+
+## コミット
+
+Conventional Commits（`feat` / `fix` / `refactor` / `chore` + スコープ）。
+
+- **破壊的変更マーカー `!` は、`schema/`（API 契約）が変わってクライアントが壊れる場合にだけ付ける**
+  （例: `feat(api)!: envelope パターンを廃止し、応答をフラットにする`）。
+  判定基準を「外部契約が壊れるか」に固定しておくと迷いようがない。
+  内部のリネームや構造変更（バレル廃止、`features/` → `contexts/` など）は、
+  どれだけ広範囲でも `!` を付けない — 直すのは自分たちだけだから。
+- semantic-release 等は入れていないため `!` を読むのは人間だけ。機械的な効果はない。
 
 ## ドキュメント
 

@@ -1,8 +1,8 @@
 import "@typespec/http";
 import "@typespec/openapi";
 import "@typespec/openapi3";
-import "./features/users/index.tsp";
-import "./features/auth/index.tsp";
+import "./contexts/users/index.tsp";
+import "./contexts/auth/index.tsp";
 import "./shared/index.tsp";
 
 using TypeSpec.Http;
