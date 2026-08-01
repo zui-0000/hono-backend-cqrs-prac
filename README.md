@@ -147,14 +147,16 @@ docs/                   # 設計と学びの記録
   文脈マッピング（例: `auth → user` は Customer/Supplier）で関係を説明できる語彙に揃えた。
 - ドメインモデルはコンテキストごとに保持。テーブル定義（Drizzle スキーマ）は
   共有インフラとして `src/shared/db/schema.ts` に集約する。
-- **バレル（再エクスポート専用の `index.ts`）は置かない**。import 経路が 1 本に定まり、
-  何がどこから来ているかが import 文だけで分かる。代わりにドメインの型・関数は
-  **エクスポート名を所属集約で修飾する**（`User` / `UserId` / `UserName` /
-  `createUser` / `changeUserProfile`）。名前空間で文脈を補えないぶん、名前自体に
-  文脈を持たせる。修飾しないとコンテキストが増えたとき `Id` や `Model` が衝突する。
+- **バレル（再エクスポート専用の `index.ts`）は置かない**（`src` 配下に 0 個）。
+  同じ型に import 経路が 2 本できるのを防ぎ、何がどこから来ているかを import 文だけで
+  読めるようにするため。ディレクトリは「公開 API」ではなく単なる置き場所として扱う。
+- バレルが無いぶん、**エクスポート名は単体で文脈が分かる形にする**。ドメインの型・関数は
+  所属集約で修飾する（`User` / `UserId` / `UserName` / `createUser` / `changeUserProfile`）。
+  修飾しないとコンテキストが増えたとき `Id` や `Model` が衝突する。
   ファイル名はエクスポート名に対応させる（`vo/user-id.ts` → `UserId`）。
-  brand タグ（`Schema.brand("User.Id")`）はグローバル一意であればよく、
-  エクスポート名と一致させる必要はない。
+- ただし **brand / DI / エラーのタグ文字列はエクスポート名と一致させなくてよい**。
+  グローバル一意でありさえすればよい識別子なので、`UserId` の brand は
+  `Schema.brand("User.Id")` のままドット区切りで階層を表す。
 - 依存の向きは常に内向き。「どの実装を使うか」を知るのは `src/runtime.ts` だけで、
   `shared/` は contexts を import しない。controller は `createApp(runtime)` 経由で
   ランタイムを受け取るため、テストでは Layer を差し替えて DB なしで HTTP 境界ごと検証できる。

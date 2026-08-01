@@ -1,14 +1,12 @@
 import { Effect } from "effect";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
-import {
-  type BadRequestError,
-  type ConflictError,
-  ErrorCode,
-  type MailAddressAlreadyExistsError,
-  type RepositoryError,
-  type ResourceNotFoundError,
-  type UnauthorizedError,
-} from "~/shared/error";
+import type { BadRequestError } from "~/shared/error/bad-request-error";
+import type { ConflictError } from "~/shared/error/conflict-error";
+import { ErrorCode } from "~/shared/error/error-code";
+import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
+import type { RepositoryError } from "~/shared/error/repository-error";
+import type { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
+import type { UnauthorizedError } from "~/shared/error/unauthorized-error";
 import { type ErrorBody, errorBody } from "./response";
 
 /**

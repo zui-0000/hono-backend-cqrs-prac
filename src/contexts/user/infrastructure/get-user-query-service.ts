@@ -3,7 +3,7 @@ import { Effect, Layer, Option } from "effect";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { db } from "~/shared/db/client";
 import { tUser } from "~/shared/db/schema";
-import { RepositoryError } from "~/shared/error";
+import { RepositoryError } from "~/shared/error/repository-error";
 
 /**
  * GetUserQueryService の Drizzle 実装 (アダプタ)。

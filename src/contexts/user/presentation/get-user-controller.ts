@@ -5,7 +5,7 @@ import {
   GetUserHeader,
   GetUserParams,
 } from "~/generated/users";
-import { ResourceNotFoundError } from "~/shared/error";
+import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
 import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
 import { successBody } from "~/shared/presentation/response";
 import { validateParams } from "~/shared/presentation/validator";

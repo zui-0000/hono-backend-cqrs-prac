@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import type { ErrorCode } from "~/shared/error";
+import type { ErrorCode } from "~/shared/error/error-code";
 import { now } from "~/shared/service/clock";
 
 /** 全レスポンス共通のメタ情報 (TypeSpec の CommonResponseMeta と対応)。 */

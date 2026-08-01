@@ -9,7 +9,8 @@ import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
 import { tUser } from "~/shared/db/schema";
 import { MailAddress } from "~/shared/domain/mail-address";
-import { MailAddressAlreadyExistsError, RepositoryError } from "~/shared/error";
+import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
+import { RepositoryError } from "~/shared/error/repository-error";
 
 /** DB 行 → User 集約への復元。DB の値は既に妥当な前提のため decode 失敗は defect 扱い。 */
 const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User> =>

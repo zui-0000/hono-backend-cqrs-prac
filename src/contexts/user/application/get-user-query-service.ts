@@ -1,5 +1,5 @@
 import { Context, type Effect, type Option } from "effect";
-import type { RepositoryError } from "~/shared/error";
+import type { RepositoryError } from "~/shared/error/repository-error";
 import type { UserDto } from "./dto";
 
 /**

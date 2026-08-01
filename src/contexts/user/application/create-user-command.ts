@@ -1,8 +1,6 @@
 import { Effect, Option, Schema } from "effect";
-import {
-  MailAddressAlreadyExistsError,
-  type RepositoryError,
-} from "~/shared/error";
+import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
+import type { RepositoryError } from "~/shared/error/repository-error";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import type { UuidGenerator } from "~/shared/service/uuid-generator";
 import { createUser } from "../domain/model/user";
