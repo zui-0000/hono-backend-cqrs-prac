@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1784981816949,
-      "tag": "0000_create_t_user",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1785040776095,
-      "tag": "0001_add_user_hashed_password",
+      "when": 1785624353719,
+      "tag": "20260801224553_create_t_user",
       "breakpoints": true
     }
   ]

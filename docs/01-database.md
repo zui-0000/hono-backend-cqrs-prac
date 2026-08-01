@@ -132,11 +132,28 @@ drizzle-schema.ts 編集
 
 ### コマンド
 
-| script                           | 内容                                                                 |
-| -------------------------------- | -------------------------------------------------------------------- |
-| `pnpm db:generate --name <name>` | マイグレーション生成（**必ず `--name` を付ける**。無いとランダム名） |
-| `pnpm db:migrate`                | 適用（`bun run src/shared/db/scripts/migrate.ts`）                   |
-| `pnpm db:studio`                 | GUI（`https://local.drizzle.studio`）                                |
+| script                           | 内容                                                            |
+| -------------------------------- | --------------------------------------------------------------- |
+| `pnpm db:generate --name <name>` | マイグレーション生成（`--name` は任意。省くとランダム語になる） |
+| `pnpm db:migrate`                | 適用（`bun run src/shared/db/scripts/migrate.ts`）              |
+| `pnpm db:studio`                 | GUI（`https://local.drizzle.studio`）                           |
+
+### ファイル名はタイムスタンプ接頭辞
+
+`drizzle.config.ts` で `migrations.prefix: "timestamp"` を指定している。
+
+```text
+20260801224553_create_t_user.sql    ← YYYYMMDDHHMMSS_<name>
+```
+
+連番（`0000_`）をやめた理由は、**ブランチを分けて作業したときに同じ番号が衝突する**から。
+タイムスタンプなら衝突しない。
+
+- 時刻は **UTC**。JST の朝に作ると前日の日付になる（07:42 JST = 前日 22:42 UTC）。
+- **適用順を決めるのはファイル名ではなく `meta/_journal.json` の `idx`**。
+  ファイル名は「いつ作ったか」を読むためのもの。
+- `--name` は任意。付けなければ `20260801224553_black_spectrum.sql` のようなランダム語になる。
+  順序はタイムスタンプが担うので、`--name` は後から読んで分かるようにするためだけの用途。
 
 DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose stop` を直接実行する（pnpm スクリプトにはしていない）。
 

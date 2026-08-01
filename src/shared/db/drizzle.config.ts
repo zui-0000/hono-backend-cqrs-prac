@@ -11,6 +11,14 @@ export default defineConfig({
   schema: "./src/contexts/*/infrastructure/drizzle-schema.ts",
   out: "./src/shared/db/migrations",
   dialect: "postgresql",
+  migrations: {
+    // ファイル名の接頭辞を連番 (0000_) ではなくタイムスタンプにする。
+    // 形式は YYYYMMDDHHMMSS で、時刻は UTC (JST の朝は前日の日付になる点に注意)。
+    // 連番だとブランチを分けて作業したとき同じ番号が衝突するが、
+    // タイムスタンプなら衝突しない。適用順は _journal.json の idx が持つので
+    // ファイル名は「いつ作ったか」を読むためのもの。
+    prefix: "timestamp",
+  },
   dbCredentials: {
     url: process.env.DATABASE_URL!,
   },

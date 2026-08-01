@@ -34,8 +34,8 @@ cp .env.example .env
 # 5. 開発用 PostgreSQL を起動（停止は docker compose stop）
 docker compose up -d
 
-# 6. マイグレーションを生成（スキーマ変更時。初回 clone は既存 migration があるので省略可）
-pnpm db:generate --name <name>
+# 6. マイグレーションを生成（スキーマ変更時のみ。初回 clone は既存 migration があるので省略可）
+pnpm db:generate --name <name>   # --name は任意（省くとランダム語になる）
 
 # 7. マイグレーションを適用（t_user 等を作成）
 pnpm db:migrate
