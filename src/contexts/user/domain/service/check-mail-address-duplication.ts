@@ -2,11 +2,13 @@ import { Effect, Option } from "effect";
 import type { MailAddress } from "~/shared/domain/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/error/repository-error";
-import type { UserId } from "./model/vo/user-id";
-import { UserRepository } from "./user-repository";
+import type { UserId } from "../model/vo/user-id";
+import { UserRepository } from "../user-repository";
 
 /**
- * 「同じメールアドレスのユーザーは 2 人存在しない」という業務ルール (ドメインサービス)。
+ * メールアドレスの重複を検証する (ドメインサービス)。
+ * 「同じメールアドレスのユーザーは 2 人存在しない」という業務ルールを担う。
+ * 重複していれば MailAddressAlreadyExistsError (errorCode 4091) で失敗する。
  *
  * User 集約 1 つを見ても「他に同じメールアドレスの人が居るか」は判断できないため、
  * 集約にも値オブジェクトにも属さない。こうした集約をまたぐ不変条件を担うのが
@@ -23,7 +25,7 @@ import { UserRepository } from "./user-repository";
  * @param excluding 除外するユーザー。更新時に「自分自身がヒットしただけ」を
  *   重複と誤判定しないために渡す (メールアドレスを変えない更新)。
  */
-export const ensureMailAddressIsUnique = (
+export const checkMailAddressDuplication = (
   mailAddress: MailAddress,
   options: { readonly excluding?: UserId } = {},
 ): Effect.Effect<

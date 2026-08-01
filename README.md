@@ -127,7 +127,7 @@ src/
 ├─ runtime.ts           # 合成ルート。Layer の結線（contexts を知る唯一の層）
 ├─ contexts/            # 境界づけられたコンテキスト単位で縦に切る
 │  └─ <context>/        #   例: user / auth
-│     ├─ domain/        #     集約 / 値オブジェクト / リポジトリのポート
+│     ├─ domain/        #     model/（集約・値オブジェクト）, service/（ドメインサービス）, ポート
 │     ├─ application/   #     command / query（CQRS）
 │     ├─ infrastructure/#     リポジトリ実装（domain ↔ DB 変換, Layer）
 │     └─ presentation/  #     controller（HTTP ↔ Effect の境界）
@@ -154,6 +154,14 @@ docs/                   # 設計と学びの記録
   所属集約で修飾する（`User` / `UserId` / `UserName` / `createUser` / `changeUserProfile`）。
   修飾しないとコンテキストが増えたとき `Id` や `Model` が衝突する。
   ファイル名はエクスポート名に対応させる（`vo/user-id.ts` → `UserId`）。
+- **集約をまたぐ業務ルールは `domain/service/` のドメインサービスに置く**。集約 1 つを
+  見ても判断できない不変条件（例: メールアドレスの重複）は、エンティティにも値オブジェクトにも
+  属さないため。ルールに名前を与えて 1 箇所に集め、「呼ぶ順序」だけを command に残す。
+  依存するのは `domain/` のポートだけなので、層の向きは内向きのまま保たれる。
+  逆に「対象が居なければ 404」のようなユースケースごとの方針は command に残す（業務ルールではない）。
+- **一意性の検証は `check<対象>Duplication` に統一する**（例: `checkMailAddressDuplication`）。
+  失敗するかどうか・何で失敗するかは Effect の型（`E` チャネル）が語るので、名前は
+  「何を見るか」だけを言う。`validate*` は presentation 層の契約スキーマ検証で使うため避ける。
 - ただし **brand / DI / エラーのタグ文字列はエクスポート名と一致させなくてよい**。
   グローバル一意でありさえすればよい識別子なので、`UserId` の brand は
   `Schema.brand("User.Id")` のままドット区切りで階層を表す。

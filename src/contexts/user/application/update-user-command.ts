@@ -2,8 +2,8 @@ import { Effect, Option } from "effect";
 import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/error/repository-error";
 import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
-import { ensureMailAddressIsUnique } from "../domain/ensure-mail-address-is-unique";
 import { changeUserProfile } from "../domain/model/user";
+import { checkMailAddressDuplication } from "../domain/service/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
 import type { UpdateUserCommandInput } from "./dto";
 
@@ -44,7 +44,9 @@ export const updateUserCommand = (
 
     // 2. メールアドレスの重複チェック。
     //    自分自身を除外しないと「メールアドレスを変えない更新」が 409 になる。
-    yield* ensureMailAddressIsUnique(input.mailAddress, { excluding: user.id });
+    yield* checkMailAddressDuplication(input.mailAddress, {
+      excluding: user.id,
+    });
 
     // 3. 集約の状態遷移 (元の user は書き換わらない)
     const updated = yield* changeUserProfile(user, {

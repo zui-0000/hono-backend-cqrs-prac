@@ -3,9 +3,9 @@ import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-
 import type { RepositoryError } from "~/shared/error/repository-error";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import type { UuidGenerator } from "~/shared/service/uuid-generator";
-import { ensureMailAddressIsUnique } from "../domain/ensure-mail-address-is-unique";
 import { createUser } from "../domain/model/user";
 import { UserHashedPassword } from "../domain/model/vo/user-hashed-password";
+import { checkMailAddressDuplication } from "../domain/service/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
 import type { CreateUserCommandInput } from "./dto";
 
@@ -33,7 +33,7 @@ export const createUserCommand = (
     const passwordHasher = yield* PasswordHasher;
 
     // 1. メールアドレスの重複チェック
-    yield* ensureMailAddressIsUnique(input.mailAddress);
+    yield* checkMailAddressDuplication(input.mailAddress);
 
     // 2. パスワードをハッシュ化 (結果は必ず妥当なので decode 失敗は defect 扱い)
     const hashedPassword = yield* passwordHasher
