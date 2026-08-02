@@ -5,21 +5,29 @@ import type { Context } from "hono";
 import { BadRequestError } from "~/shared/errors/bad-request-error";
 import type { ErrorDetail } from "~/shared/errors/error-detail";
 
-import { ErrorMessage } from "./error-message";
+import { ErrorMessage } from "./constants/error-message";
 
 /**
- * presentation 層の検証ユーティリティ。
+ * リクエストの検証ユーティリティ。
  *
  * 「入力源ごとの検証」と「ユースケース入力の組み立て」を分けている。
+ * **呼ぶ側が違う**ので、そこを取り違えないこと。
  *
- * 入力源ごとの検証 (どれも API 契約の生成スキーマで検証する):
+ * 入力源ごとの検証 — 呼ぶのは handleWithEffect だけ (controller からは呼ばない):
  *   - validateJson   … ボディ             `c.req.json()`
  *   - validateHeader … ヘッダ             `c.req.header()`
  *   - validateParams … パスパラメータ     `c.req.param()`   例: /users/:id の :id
  *   - validateQuery  … クエリパラメータ   `c.req.query()`   例: /users?page=2
  *
- * ユースケース入力の組み立て:
+ * どれを検証するかは routes の `request` 宣言が決め、handleWithEffect が
+ * 実行して controller に渡す。controller が受け取るのは検証済みの値なので、
+ * ここで再度呼ぶと同じ検証を二度走らせることになる。
+ *
+ * ユースケース入力の組み立て — 呼ぶのは controller:
  *   - decodeInput    … 検証済みの値を合成し、値オブジェクトへ変換する
+ *
+ * decodeInput は変換に見えるが、戻り値が Effect<A, BadRequestError> であるとおり
+ * 「組み立てた値がコマンド入力スキーマを満たすか」を検証している (満たさなければ 400)。
  *
  * 名前の注意: パスパラメータとクエリパラメータはどちらも「パラメータ」だが、
  * validateParams が扱うのは **パス** のほう。Hono 自身が `c.req.param()` /

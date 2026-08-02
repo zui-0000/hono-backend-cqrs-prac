@@ -2,20 +2,20 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { BadRequestError } from "~/shared/errors/bad-request-error";
 import type { ConflictError } from "~/shared/errors/conflict-error";
+import type { ErrorDetail } from "~/shared/errors/error-detail";
 import type { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/errors/repository-error";
 import type { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
 import type { UnauthorizedError } from "~/shared/errors/unauthorized-error";
 
-import { type ErrorBody, errorBody } from "./error-body";
-import { ErrorCode } from "./error-code";
-import { ErrorMessage } from "./error-message";
-import { HttpStatus } from "./http-status";
+import { ErrorCode } from "./constants/error-code";
+import { ErrorMessage } from "./constants/error-message";
+import { HttpStatus } from "./constants/http-status";
 
 /**
  * presentation 層が HTTP に翻訳できるエラーの集合。
- * 検証失敗 (Effect Schema の ParseError) は validator が BadRequestError に
- * 変換するため、ライブラリ由来の型はここには現れない。
+ * 検証失敗 (Effect Schema の ParseError) は request-validator が
+ * BadRequestError に変換するため、ライブラリ由来の型はここには現れない。
  *
  * 対応する HTTP ステータスの昇順に並べる。
  */
@@ -32,11 +32,37 @@ export type ApplicationError =
   // 500
   | RepositoryError;
 
+/**
+ * エラー応答のボディ (TypeSpec の各 *Error モデルと対応)。
+ *
+ * 成功応答を封筒 (result / meta) で包まないのと同じく、エラーもフラットに返す
+ * (経緯は docs/02-architecture.md の「API 応答を封筒で包まない」)。
+ */
+export type ErrorBody = {
+  readonly errorCode: ErrorCode;
+  readonly message: string;
+  readonly details?: readonly ErrorDetail[];
+};
+
 /** HTTP 応答 (ステータスコードとボディ) 。 */
 export type HttpErrorResponse = {
   readonly status: ContentfulStatusCode;
   readonly body: ErrorBody;
 };
+
+/**
+ * エラー応答のボディを組み立てる。時刻を含まなくなったため純粋な関数。
+ * details は未指定ならキー自体を落とす (契約上も任意項目のため)。
+ */
+const errorBody = (params: {
+  readonly errorCode: ErrorCode;
+  readonly message: string;
+  readonly details?: readonly ErrorDetail[];
+}): ErrorBody => ({
+  errorCode: params.errorCode,
+  message: params.message,
+  ...(params.details === undefined ? {} : { details: params.details }),
+});
 
 /**
  * ドメイン/アプリケーションのエラーを HTTP 応答へ翻訳する。
@@ -54,7 +80,7 @@ export const handleErrorResponse = (
   switch (error._tag) {
     // ---- 400 Bad Request (汎用) ----
     // リクエストが不正 (検証違反・JSON として読めない等)。
-    // 違反フィールドは validator が details に詰めている。
+    // 違反フィールドは request-validator が details に詰めている。
     case "BadRequestError":
       return {
         status: HttpStatus.BadRequest,

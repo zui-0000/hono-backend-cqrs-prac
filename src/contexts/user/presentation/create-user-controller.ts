@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { createUserCommand } from "~/contexts/user/application/create-user-command";
 import { CreateUserCommandInput } from "~/contexts/user/application/dto";
 import type { CreateUserBody } from "~/generated/users";
-import { decodeInput } from "~/shared/presentation/validator";
+import { decodeInput } from "~/shared/presentation/request-validator";
 
 /** 受け取る検証済みの入力。user-routes.ts の request 宣言と対応する。 */
 type CreateUserControllerInput = { body: typeof CreateUserBody.Type };

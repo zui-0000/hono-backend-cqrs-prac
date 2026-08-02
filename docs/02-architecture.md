@@ -26,7 +26,8 @@ src/
 │  │                    #   value-objects/（MailAddress / Password）に分ける
 │  ├─ errors/           # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
-│  │                    #   + API が外に見せるコード体系（http-status / error-code）
+│  │  └─ constants/     #   API が外に見せる語彙。公開するのが `as const` の表と
+│  │                    #   派生型だけのファイルを置く（振る舞いを持つものは直下）
 │  ├─ services/         # 横断サービス（採番・ハッシュ化）のポート（Context.Tag）
 │  ├─ infrastructure/   #   ↑ の本番実装（Layer）。合成ルートだけが参照する
 │  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）

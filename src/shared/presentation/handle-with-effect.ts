@@ -4,18 +4,19 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
+import { HttpHeader } from "./constants/http-header";
+import { HttpStatus } from "./constants/http-status";
 import {
   type ApplicationError,
   handleErrorResponse,
 } from "./handle-error-response";
-import { HttpStatus } from "./http-status";
-import { logFailure, REQUEST_ID_HEADER, resolveRequestId } from "./request-log";
+import { logFailure, resolveRequestId } from "./request-log";
 import {
   validateHeader,
   validateJson,
   validateParams,
   validateQuery,
-} from "./validator";
+} from "./request-validator";
 
 /**
  * リクエストのどの入力源を契約で検証するかの宣言。
@@ -96,7 +97,7 @@ const validateRequest = <Req extends RequestSchemas>(
     const validated: Record<string, unknown> = { c };
 
     validated["header"] = yield* validateHeader(c, request.header, [
-      REQUEST_ID_HEADER,
+      HttpHeader.RequestId,
     ]);
     if (request.body !== undefined) {
       validated["body"] = yield* validateJson(c, request.body);
@@ -139,7 +140,7 @@ const handle =
       Effect.gen(function* () {
         // 契約違反で弾かれるリクエストもログに残せるよう、ID は先に確定させる。
         const requestId = yield* resolveRequestId(c);
-        c.header(REQUEST_ID_HEADER, requestId);
+        c.header(HttpHeader.RequestId, requestId);
 
         return yield* validateRequest(c, request).pipe(
           Effect.flatMap(controller),

@@ -3,10 +3,14 @@ import type { Context } from "hono";
 
 import { UuidGenerator } from "~/shared/services/uuid-generator";
 
+import { HttpHeader } from "./constants/http-header";
 import type { ApplicationError } from "./handle-error-response";
 
-/** 相関 ID のヘッダ名。リクエストから引き継ぎ、応答にも付与する。 */
-export const REQUEST_ID_HEADER = "X-Request-Id";
+/**
+ * 以下 2 つはヘッダ名ではなく「ログに載せて安全か」の判定基準なので、
+ * constants/ ではなく唯一の利用者である resolveRequestId の隣に置く。
+ * 契約が要求する形式 (uuid) とは別物で、契約の検証は validateHeader が行う。
+ */
 
 /** 受け取った相関 ID として許容する最大長 (ログ肥大化を防ぐ)。 */
 const REQUEST_ID_MAX_LENGTH = 128;
@@ -28,7 +32,7 @@ export const resolveRequestId = (
   c: Context,
 ): Effect.Effect<string, never, UuidGenerator> =>
   Effect.gen(function* () {
-    const incoming = c.req.header(REQUEST_ID_HEADER);
+    const incoming = c.req.header(HttpHeader.RequestId);
     if (
       incoming !== undefined &&
       incoming.length <= REQUEST_ID_MAX_LENGTH &&

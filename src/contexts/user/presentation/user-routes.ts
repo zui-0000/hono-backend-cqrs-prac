@@ -13,8 +13,8 @@ import {
   UpdateUserHeader,
   UpdateUserParams,
 } from "~/generated/users";
+import { HttpStatus } from "~/shared/presentation/constants/http-status";
 import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
-import { HttpStatus } from "~/shared/presentation/http-status";
 
 import type { UserRuntime } from "../user-runtime";
 import { createUserController } from "./create-user-controller";

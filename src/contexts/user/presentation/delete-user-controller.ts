@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { deleteUserCommand } from "~/contexts/user/application/delete-user-command";
 import { DeleteUserCommandInput } from "~/contexts/user/application/dto";
 import type { DeleteUserParams } from "~/generated/users";
-import { decodeInput } from "~/shared/presentation/validator";
+import { decodeInput } from "~/shared/presentation/request-validator";
 
 /** 受け取る検証済みの入力。user-routes.ts の request 宣言と対応する。 */
 type DeleteUserControllerInput = { params: typeof DeleteUserParams.Type };

@@ -12,9 +12,9 @@ import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
 import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { MailAddress } from "~/shared/domain/value-objects/mail-address";
-import { ErrorCode } from "~/shared/presentation/error-code";
-import { HttpStatus } from "~/shared/presentation/http-status";
-import { REQUEST_ID_HEADER } from "~/shared/presentation/request-log";
+import { ErrorCode } from "~/shared/presentation/constants/error-code";
+import { HttpHeader } from "~/shared/presentation/constants/http-header";
+import { HttpStatus } from "~/shared/presentation/constants/http-status";
 import { PasswordHasher } from "~/shared/services/password-hasher";
 import { UuidGenerator } from "~/shared/services/uuid-generator";
 
@@ -96,7 +96,7 @@ const makeRuntime = (
 
 const headers = {
   "Content-Type": "application/json",
-  [REQUEST_ID_HEADER]: REQUEST_ID,
+  [HttpHeader.RequestId]: REQUEST_ID,
 };
 
 const postUsers = async (
@@ -144,7 +144,7 @@ describe("POST /users", () => {
     const response = await postUsers(runtime, validBody);
 
     expect(response.status).toBe(HttpStatus.Created);
-    expect(response.headers.get(REQUEST_ID_HEADER)).toBe(REQUEST_ID);
+    expect(response.headers.get(HttpHeader.RequestId)).toBe(REQUEST_ID);
     // 採番された id だけを返す (クライアントが GET /users/{id} を呼べるように)。
     expect(await response.json()).toEqual({ id: FIXED_UUID });
     expect(created).toHaveLength(1);
@@ -247,7 +247,7 @@ describe("PUT /users/:id", () => {
     const response = await putUser(runtime, FIXED_UUID, updateBody);
 
     expect(response.status).toBe(HttpStatus.NoContent);
-    expect(response.headers.get(REQUEST_ID_HEADER)).toBe(REQUEST_ID);
+    expect(response.headers.get(HttpHeader.RequestId)).toBe(REQUEST_ID);
     // 204 は本文を持たない。
     expect(await response.text()).toBe("");
 
@@ -342,7 +342,7 @@ describe("DELETE /users/:id", () => {
     const response = await deleteUser(runtime, FIXED_UUID);
 
     expect(response.status).toBe(HttpStatus.NoContent);
-    expect(response.headers.get(REQUEST_ID_HEADER)).toBe(REQUEST_ID);
+    expect(response.headers.get(HttpHeader.RequestId)).toBe(REQUEST_ID);
     expect(await response.text()).toBe("");
     expect(deleted).toEqual([FIXED_UUID as UserId]);
   });

@@ -3,7 +3,7 @@ import { Effect } from "effect";
 import { UpdateUserCommandInput } from "~/contexts/user/application/dto";
 import { updateUserCommand } from "~/contexts/user/application/update-user-command";
 import type { UpdateUserBody, UpdateUserParams } from "~/generated/users";
-import { decodeInput } from "~/shared/presentation/validator";
+import { decodeInput } from "~/shared/presentation/request-validator";
 
 /** 受け取る検証済みの入力。user-routes.ts の request 宣言と対応する。 */
 type UpdateUserControllerInput = {
