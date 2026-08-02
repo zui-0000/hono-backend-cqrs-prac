@@ -37,8 +37,8 @@ export const checkMailAddressDuplication = (
     const userRepository = yield* UserRepository;
     const user = yield* userRepository.findByMailAddress(mailAddress);
 
-    // 誰も使っていない、または使っているのが除外対象本人なら重複ではない。
-    if (Option.isNone(user) || user.value.id === options.excluding) return;
-
-    return yield* new MailAddressAlreadyExistsError({ mailAddress });
+    // 除外対象本人以外の誰かが使っていれば重複。
+    if (Option.isSome(user) && user.value.id !== options.excluding) {
+      return yield* new MailAddressAlreadyExistsError({ mailAddress });
+    }
   });
