@@ -34,6 +34,16 @@ const REQUEST_ID = "019fa5bc-1111-7000-8000-000000000000";
 /** 別人を表す id。「自分自身との重複」と「他人との重複」を区別するために使う。 */
 const OTHER_UUID = "019fa5bc-2222-7000-8000-000000000000";
 
+/**
+ * ハッシュのフィクスチャ。UserHashedPassword は PHC 形式 (`$<識別子>$...`) を
+ * 要求するため、実物と同じ形にしておく必要がある
+ * (平文がハッシュ欄に入る事故を型で弾くための制約)。
+ */
+const EXISTING_HASH = "$argon2id$v=19$m=65536,t=2,p=1$c2FsdA$existing";
+
+/** 偽 PasswordHasher が返す値。実物の代わりだが形は揃える。 */
+const FAKE_HASH = "$argon2id$v=19$m=65536,t=2,p=1$c2FsdA$fake";
+
 const validBody = {
   name: "アスカ",
   mailAddress: "asuka@example.com",
@@ -49,7 +59,7 @@ const makeUser = (
   mailAddress: Schema.decodeSync(MailAddress)(
     params.mailAddress ?? "existing@example.com",
   ),
-  hashedPassword: Schema.decodeSync(UserHashedPassword)("hashed"),
+  hashedPassword: Schema.decodeSync(UserHashedPassword)(EXISTING_HASH),
   createdAt: new Date(0),
   updatedAt: new Date(0),
 });
@@ -76,7 +86,7 @@ const makeRuntime = (
         ...overrides.getUserQueryService,
       }),
       Layer.succeed(PasswordHasher, {
-        hash: () => Effect.succeed("hashed-by-fake"),
+        hash: () => Effect.succeed(FAKE_HASH),
         verify: () => Effect.succeed(true),
       }),
       // 採番を固定し、生成される id を予測可能にする。
@@ -141,9 +151,7 @@ describe("POST /users", () => {
     // 採番は UuidGenerator 経由なので、テストでは固定値になる。
     expect(created[0]?.id).toBe(FIXED_UUID as UserId);
     // ドメインは平文を持たず、PasswordHasher の結果だけを保持する。
-    expect(created[0]?.hashedPassword).toBe(
-      "hashed-by-fake" as UserHashedPassword,
-    );
+    expect(created[0]?.hashedPassword).toBe(FAKE_HASH as UserHashedPassword);
   });
 
   test("異常系: メールアドレス重複は 409 (errorCode 4091)", async () => {
