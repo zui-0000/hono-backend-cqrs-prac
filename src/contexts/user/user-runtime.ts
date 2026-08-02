@@ -1,7 +1,7 @@
 import type { ManagedRuntime } from "effect";
 
-import type { PasswordHasher } from "~/shared/service/password-hasher";
-import type { UuidGenerator } from "~/shared/service/uuid-generator";
+import type { PasswordHasher } from "~/shared/services/password-hasher";
+import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import type { GetUserQueryService } from "./application/get-user-query-service";
 import type { UserRepository } from "./domain/user-repository";

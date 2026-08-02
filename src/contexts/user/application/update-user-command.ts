@@ -1,11 +1,11 @@
 import { Effect, Option } from "effect";
 
-import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
-import type { RepositoryError } from "~/shared/error/repository-error";
-import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
+import type { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
+import type { RepositoryError } from "~/shared/errors/repository-error";
+import { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
 
 import { changeUserProfile } from "../domain/model/user";
-import { checkMailAddressDuplication } from "../domain/service/check-mail-address-duplication";
+import { checkMailAddressDuplication } from "../domain/services/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
 import type { UpdateUserCommandInput } from "./dto";
 

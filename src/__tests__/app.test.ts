@@ -7,13 +7,16 @@ import type { AppRuntime } from "~/app-runtime";
 import type { GetUserQueryOutput } from "~/contexts/user/application/dto";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { User } from "~/contexts/user/domain/model/user";
-import { UserHashedPassword } from "~/contexts/user/domain/model/vo/user-hashed-password";
-import { UserId } from "~/contexts/user/domain/model/vo/user-id";
-import { UserName } from "~/contexts/user/domain/model/vo/user-name";
+import { UserHashedPassword } from "~/contexts/user/domain/model/value-objects/user-hashed-password";
+import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
+import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { MailAddress } from "~/shared/domain/mail-address";
-import { PasswordHasher } from "~/shared/service/password-hasher";
-import { UuidGenerator } from "~/shared/service/uuid-generator";
+import { ErrorCode } from "~/shared/presentation/error-code";
+import { HttpStatus } from "~/shared/presentation/http-status";
+import { REQUEST_ID_HEADER } from "~/shared/presentation/request-log";
+import { PasswordHasher } from "~/shared/services/password-hasher";
+import { UuidGenerator } from "~/shared/services/uuid-generator";
 
 /**
  * HTTP 境界の統合テスト (DB・実サービスなし)。
@@ -83,7 +86,7 @@ const makeRuntime = (
 
 const headers = {
   "Content-Type": "application/json",
-  "X-Request-Id": REQUEST_ID,
+  [REQUEST_ID_HEADER]: REQUEST_ID,
 };
 
 const postUsers = async (
@@ -130,8 +133,8 @@ describe("POST /users", () => {
 
     const response = await postUsers(runtime, validBody);
 
-    expect(response.status).toBe(201);
-    expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
+    expect(response.status).toBe(HttpStatus.Created);
+    expect(response.headers.get(REQUEST_ID_HEADER)).toBe(REQUEST_ID);
     // 採番された id だけを返す (クライアントが GET /users/{id} を呼べるように)。
     expect(await response.json()).toEqual({ id: FIXED_UUID });
     expect(created).toHaveLength(1);
@@ -153,8 +156,10 @@ describe("POST /users", () => {
 
     const response = await postUsers(runtime, validBody);
 
-    expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ errorCode: "4091" });
+    expect(response.status).toBe(HttpStatus.Conflict);
+    expect(await response.json()).toMatchObject({
+      errorCode: ErrorCode.MailAddressAlreadyExists,
+    });
   });
 
   test("異常系: 契約に反するリクエストは 400 と該当フィールド", async () => {
@@ -163,9 +168,9 @@ describe("POST /users", () => {
       password: "short",
     });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(HttpStatus.BadRequest);
     expect(await response.json()).toMatchObject({
-      errorCode: "4000",
+      errorCode: ErrorCode.BadRequest,
       details: [{ field: "password" }],
     });
   });
@@ -183,7 +188,7 @@ describe("GET /users/:id", () => {
 
     const response = await getUser(runtime, FIXED_UUID);
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(HttpStatus.Ok);
     // 封筒 (result / meta) で包まず、リソースの内容をそのまま返す。
     expect(await response.json()).toEqual({
       name: dto.name,
@@ -195,16 +200,18 @@ describe("GET /users/:id", () => {
     // 既定の fake は Option.none を返す = 見つからない。
     const response = await getUser(makeRuntime(), FIXED_UUID);
 
-    expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ errorCode: "4040" });
+    expect(response.status).toBe(HttpStatus.NotFound);
+    expect(await response.json()).toMatchObject({
+      errorCode: ErrorCode.ResourceNotFound,
+    });
   });
 
   test("異常系: uuid v7 形式でない id は 400 と該当フィールド", async () => {
     const response = await getUser(makeRuntime(), "not-a-uuid");
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(HttpStatus.BadRequest);
     expect(await response.json()).toMatchObject({
-      errorCode: "4000",
+      errorCode: ErrorCode.BadRequest,
       details: [{ field: "id" }],
     });
   });
@@ -231,8 +238,8 @@ describe("PUT /users/:id", () => {
 
     const response = await putUser(runtime, FIXED_UUID, updateBody);
 
-    expect(response.status).toBe(204);
-    expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
+    expect(response.status).toBe(HttpStatus.NoContent);
+    expect(response.headers.get(REQUEST_ID_HEADER)).toBe(REQUEST_ID);
     // 204 は本文を持たない。
     expect(await response.text()).toBe("");
 
@@ -263,7 +270,7 @@ describe("PUT /users/:id", () => {
 
     const response = await putUser(runtime, FIXED_UUID, updateBody);
 
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(HttpStatus.NoContent);
   });
 
   test("異常系: 他人が使っているメールアドレスは 409 (errorCode 4091)", async () => {
@@ -281,16 +288,20 @@ describe("PUT /users/:id", () => {
 
     const response = await putUser(runtime, FIXED_UUID, updateBody);
 
-    expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ errorCode: "4091" });
+    expect(response.status).toBe(HttpStatus.Conflict);
+    expect(await response.json()).toMatchObject({
+      errorCode: ErrorCode.MailAddressAlreadyExists,
+    });
   });
 
   test("異常系: 存在しない id は 404 (errorCode 4040)", async () => {
     // 既定の fake は findById が Option.none を返す。
     const response = await putUser(makeRuntime(), FIXED_UUID, updateBody);
 
-    expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ errorCode: "4040" });
+    expect(response.status).toBe(HttpStatus.NotFound);
+    expect(await response.json()).toMatchObject({
+      errorCode: ErrorCode.ResourceNotFound,
+    });
   });
 
   test("異常系: 契約に反するボディは 400 と該当フィールド", async () => {
@@ -299,9 +310,9 @@ describe("PUT /users/:id", () => {
       mailAddress: "not-a-mail",
     });
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(HttpStatus.BadRequest);
     expect(await response.json()).toMatchObject({
-      errorCode: "4000",
+      errorCode: ErrorCode.BadRequest,
       details: [{ field: "mailAddress" }],
     });
   });
@@ -322,8 +333,8 @@ describe("DELETE /users/:id", () => {
 
     const response = await deleteUser(runtime, FIXED_UUID);
 
-    expect(response.status).toBe(204);
-    expect(response.headers.get("X-Request-Id")).toBe(REQUEST_ID);
+    expect(response.status).toBe(HttpStatus.NoContent);
+    expect(response.headers.get(REQUEST_ID_HEADER)).toBe(REQUEST_ID);
     expect(await response.text()).toBe("");
     expect(deleted).toEqual([FIXED_UUID as UserId]);
   });
@@ -341,17 +352,19 @@ describe("DELETE /users/:id", () => {
 
     const response = await deleteUser(runtime, FIXED_UUID);
 
-    expect(response.status).toBe(404);
-    expect(await response.json()).toMatchObject({ errorCode: "4040" });
+    expect(response.status).toBe(HttpStatus.NotFound);
+    expect(await response.json()).toMatchObject({
+      errorCode: ErrorCode.ResourceNotFound,
+    });
     expect(deleted).toEqual([]);
   });
 
   test("異常系: uuid v7 形式でない id は 400 と該当フィールド", async () => {
     const response = await deleteUser(makeRuntime(), "not-a-uuid");
 
-    expect(response.status).toBe(400);
+    expect(response.status).toBe(HttpStatus.BadRequest);
     expect(await response.json()).toMatchObject({
-      errorCode: "4000",
+      errorCode: ErrorCode.BadRequest,
       details: [{ field: "id" }],
     });
   });

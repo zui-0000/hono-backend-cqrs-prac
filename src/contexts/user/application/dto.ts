@@ -3,8 +3,8 @@ import { Schema } from "effect";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { Password } from "~/shared/domain/password";
 
-import { UserId } from "../domain/model/vo/user-id";
-import { UserName } from "../domain/model/vo/user-name";
+import { UserId } from "../domain/model/value-objects/user-id";
+import { UserName } from "../domain/model/value-objects/user-name";
 
 /**
  * user コンテキストのユースケース入出力 (DTO)。

@@ -1,11 +1,11 @@
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-import type { BadRequestError } from "~/shared/error/bad-request-error";
-import type { ConflictError } from "~/shared/error/conflict-error";
-import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
-import type { RepositoryError } from "~/shared/error/repository-error";
-import type { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
-import type { UnauthorizedError } from "~/shared/error/unauthorized-error";
+import type { BadRequestError } from "~/shared/errors/bad-request-error";
+import type { ConflictError } from "~/shared/errors/conflict-error";
+import type { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
+import type { RepositoryError } from "~/shared/errors/repository-error";
+import type { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
+import type { UnauthorizedError } from "~/shared/errors/unauthorized-error";
 
 import { type ErrorBody, errorBody } from "./error-body";
 import { ErrorCode } from "./error-code";

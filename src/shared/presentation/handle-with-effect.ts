@@ -2,7 +2,7 @@ import { Effect, type ManagedRuntime, Schema } from "effect";
 import type { Context, Handler } from "hono";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 
-import type { UuidGenerator } from "~/shared/service/uuid-generator";
+import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import {
   type ApplicationError,

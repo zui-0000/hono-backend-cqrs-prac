@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import type { Context } from "hono";
 
-import { UuidGenerator } from "~/shared/service/uuid-generator";
+import { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import type { ApplicationError } from "./handle-error-response";
 

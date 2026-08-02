@@ -1,12 +1,12 @@
 import { Effect, Schema } from "effect";
 
 import { MailAddress } from "~/shared/domain/mail-address";
-import { now } from "~/shared/service/clock";
-import type { UuidGenerator } from "~/shared/service/uuid-generator";
+import { now } from "~/shared/services/clock";
+import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
-import { UserHashedPassword } from "./vo/user-hashed-password";
-import { generateUserId, UserId } from "./vo/user-id";
-import { UserName } from "./vo/user-name";
+import { UserHashedPassword } from "./value-objects/user-hashed-password";
+import { generateUserId, UserId } from "./value-objects/user-id";
+import { UserName } from "./value-objects/user-name";
 
 /**
  * User 集約ルート。

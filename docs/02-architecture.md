@@ -17,16 +17,16 @@ src/
 │  └─ <context>/        #   例: user / auth
 │     ├─ <ctx>-layer.ts   #   提供側: このコンテキストの実装（infrastructure を知る）
 │     ├─ <ctx>-runtime.ts #   要求側: 動かすのに必要なサービス（ポートだけを知る）
-│     ├─ domain/        #     model/（集約・値オブジェクト）, service/（ドメインサービス）, ポート
+│     ├─ domain/        #     model/（集約 + value-objects/）, services/（ドメインサービス）, ポート
 │     ├─ application/   #     command / query（CQRS）
 │     ├─ infrastructure/#     テーブル定義 / リポジトリ実装（domain ↔ DB 変換, Layer）
 │     └─ presentation/  #     <ctx>-routes.ts（HTTP 契約の宣言）+ controller
 ├─ shared/
 │  ├─ domain/           # コンテキストを跨ぐ値オブジェクト（Uuid / MailAddress / Password）
-│  ├─ error/            # 型付きエラー（Data.TaggedError）
+│  ├─ errors/           # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  │                    #   + API が外に見せるコード体系（http-status / error-code）
-│  ├─ service/          # 横断サービス（採番・ハッシュ化）のポートと実装
+│  ├─ services/         # 横断サービス（採番・ハッシュ化）のポートと実装
 │  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）
 ├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
 └─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）
@@ -88,7 +88,7 @@ User / UserId / UserName / UserHashedPassword / createUser / changeUserProfile;
 
 修飾しないと、コンテキストが増えたとき `Id` や `Model` が衝突して別名 import 地獄になる。
 
-**ファイル名はエクスポート名に対応させる**（`vo/user-id.ts` → `UserId`）。
+**ファイル名はエクスポート名に対応させる**（`value-objects/user-id.ts` → `UserId`）。
 複数の定義を持つカテゴリファイル（`dto.ts` など）は例外。
 
 ### ただしタグ文字列は一致させなくてよい
@@ -154,7 +154,7 @@ glob を取れるため、ファイルを分けても migration は 1 系列で�
 
 ---
 
-## ドメインサービス（`domain/service/`）
+## ドメインサービス（`domain/services/`）
 
 **集約をまたぐ業務ルール**を置く。集約 1 つを見ても判断できない不変条件は、
 エンティティにも値オブジェクトにも属さないため（Evans の Service の定義）。

@@ -1,6 +1,6 @@
 import { Context, type Effect, type Option } from "effect";
 
-import type { RepositoryError } from "~/shared/error/repository-error";
+import type { RepositoryError } from "~/shared/errors/repository-error";
 
 import type { GetUserQueryOutput } from "./dto";
 

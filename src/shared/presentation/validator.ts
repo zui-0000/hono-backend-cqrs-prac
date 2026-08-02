@@ -2,7 +2,7 @@ import { Effect, ParseResult, Schema } from "effect";
 import type { ParseError } from "effect/ParseResult";
 import type { Context } from "hono";
 
-import { BadRequestError } from "~/shared/error/bad-request-error";
+import { BadRequestError } from "~/shared/errors/bad-request-error";
 
 import type { ErrorDetailBody } from "./error-body";
 import { ErrorMessage } from "./error-message";
