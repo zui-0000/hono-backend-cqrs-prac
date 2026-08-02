@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect";
 
-import { MailAddress } from "~/shared/domain/mail-address";
+import { MailAddress } from "~/shared/domain/value-objects/mail-address";
 import { now } from "~/shared/services/clock";
 import type { UuidGenerator } from "~/shared/services/uuid-generator";
 

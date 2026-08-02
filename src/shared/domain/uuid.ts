@@ -14,5 +14,10 @@ const UUID_V7_PATTERN =
  * 集約ごとの id 型は名目的に区別 (UserId と OrderId を混用不可) に保つ。
  * brand タグ ("User.Id") はグローバルに一意であればよく、
  * エクスポート名 (UserId) と一致している必要はない。
+ *
+ * value-objects/ に入れていないのはそのため。このリポジトリで値オブジェクトの
+ * 目印は brand (名目的型付け) であり、Uuid はそれを持たない。
+ * 単体では意味を成さず、brand を重ねて初めて値オブジェクトになる素材なので、
+ * 完成品 (MailAddress / Password) と同じ場所には置かない。
  */
 export const Uuid = Schema.String.pipe(Schema.pattern(UUID_V7_PATTERN));

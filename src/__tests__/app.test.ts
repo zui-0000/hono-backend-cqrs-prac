@@ -11,7 +11,7 @@ import { UserHashedPassword } from "~/contexts/user/domain/model/value-objects/u
 import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
 import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
-import { MailAddress } from "~/shared/domain/mail-address";
+import { MailAddress } from "~/shared/domain/value-objects/mail-address";
 import { ErrorCode } from "~/shared/presentation/error-code";
 import { HttpStatus } from "~/shared/presentation/http-status";
 import { REQUEST_ID_HEADER } from "~/shared/presentation/request-log";

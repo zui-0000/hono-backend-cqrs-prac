@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
-import { MailAddress } from "~/shared/domain/mail-address";
-import { Password } from "~/shared/domain/password";
+import { MailAddress } from "~/shared/domain/value-objects/mail-address";
+import { Password } from "~/shared/domain/value-objects/password";
 
 import { UserId } from "../domain/model/value-objects/user-id";
 import { UserName } from "../domain/model/value-objects/user-name";

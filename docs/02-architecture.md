@@ -22,7 +22,8 @@ src/
 │     ├─ infrastructure/#     テーブル定義 / リポジトリ実装（domain ↔ DB 変換, Layer）
 │     └─ presentation/  #     <ctx>-routes.ts（HTTP 契約の宣言）+ controller
 ├─ shared/
-│  ├─ domain/           # コンテキストを跨ぐ値オブジェクト（Uuid / MailAddress / Password）
+│  ├─ domain/           # 共有カーネル。uuid.ts（brand なしの形式スキーマ）と
+│  │                    #   value-objects/（MailAddress / Password）に分ける
 │  ├─ errors/           # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  │                    #   + API が外に見せるコード体系（http-status / error-code）
