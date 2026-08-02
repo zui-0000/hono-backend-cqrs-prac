@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Schema } from "effect";
+import { Context, Effect, Schema } from "effect";
 
 /**
  * UUID (v7) を生成するサービス。
@@ -14,11 +14,6 @@ export interface UuidGenerator {
   readonly next: Effect.Effect<string>;
 }
 export const UuidGenerator = Context.GenericTag<UuidGenerator>("UuidGenerator");
-
-/** 本番実装: Bun ネイティブの uuidv7 を採番する。 */
-export const UuidGeneratorLive = Layer.succeed(UuidGenerator, {
-  next: Effect.sync(() => Bun.randomUUIDv7()),
-});
 
 /**
  * 与えた branded uuid スキーマの新規 id を採番する (アプリ側採番)。

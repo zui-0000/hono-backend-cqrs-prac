@@ -18,19 +18,38 @@ oxlint は import 文の文字列しか見ないため、相対パスと `~/` �
 
 両ツールで同じ内容を強制している。
 
-| 参照元 →                               | domain | application | infrastructure | presentation | `shared/db` | `generated` |
-| -------------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
-| **domain**                             |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **application**                        |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **infrastructure**                     |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
-| **presentation**                       |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
-| **shared**                             |   ✗    |      ✗      |       ✗        |      ✗       |      ✓      |      ✗      |
-| **`src/app-runtime.ts`**（合成ルート） |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
+`infrastructure` 列は `contexts/<ctx>/infrastructure/` と `shared/infrastructure/` の両方を指す
+（どちらも「実装」なので同じ扱い）。
+
+| 参照元 →                                        | domain | application | infrastructure | presentation | `shared/db` | `generated` |
+| ----------------------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
+| **domain**                                      |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **application**                                 |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **infrastructure**                              |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
+| **presentation**                                |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
+| **shared のポート側**（domain/services/errors） |   ✗    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **`<ctx>-layer.ts`**（提供側）                  |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
+| **`src/app-runtime.ts`**（合成ルート）          |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
 
 - `generated`（API 契約の生成コード）に触れるのは **presentation だけ**。
   契約の型が内側へ漏れると、契約を変えるたびにドメインまで書き換えが波及する。
 - `shared/db`（Drizzle）に触れるのは **infrastructure だけ**。
-- **合成ルート（`src/app-runtime.ts`）だけが実装を知る。** 他はポート（`Context.Tag`）越しに使う。
+- **実装（`Layer`）を知ってよいのは合成側だけ。** それ以外はポート（`Context.Tag`）越しに使う。
+  合成側とは `<ctx>-layer.ts` と `src/app-runtime.ts` の 2 つ。
+
+### shared でもポートと実装を分ける
+
+横断サービス（採番・ハッシュ化）は、**ポートを `shared/services/`、実装を `shared/infrastructure/`**
+に分けて置く。当初は 1 ファイルに同居させていたが、これには 2 つの問題があった。
+
+1. **ポートを import しただけで実装の依存が付いてくる。** `PasswordHasher`（Tag）を使う
+   application 層のモジュールグラフが `Bun.password` に到達していた。今は無害でも、
+   ハッシュ実装を npm ライブラリに替えた瞬間、そのライブラリがドメインまで引きずり込まれる。
+2. **ルールで検出できない。** ここの検査は**モジュール単位**で依存を見るため、
+   ポートと実装が同じファイルにあると、そもそも辿るべき辺が存在しない。
+
+裏を返すと、**「実装は `infrastructure/` に置く」という規約自体は機械では守らせられない**。
+守られている限りにおいて、上の表のすべてが強制される。
 
 ---
 
@@ -87,9 +106,20 @@ const message = ({ violation, reason, fix }) =>
 `contexts/user/presentation` → `contexts/user/infrastructure` は引っかからない。
 これは `presentation-not-to-impl` という別ルールで塞いでいる。
 
+### 同じファイルに入れてしまうと、依存として見えない
+
+どちらのツールも**モジュール単位**で依存を見る。ポートと実装を 1 ファイルに書くと
+両者の間に辺が存在しないので、**どんなルールを足しても検出できない**。
+実際 `shared/services/password-hasher.ts` が Tag と `PasswordHasherLive`（`Bun.password`）を
+同居させており、application 層から実装へ経路が通っていた（[上記](#shared-でもポートと実装を分ける)）。
+
+ここから言えるのは、**ルールが守るのは「ファイルの分け方」が正しいという前提の上**だということ。
+分け方そのものは人間が守るしかない。
+
 ### ルールは「書いたら効く」とは限らない
 
-上の 2 件はどちらも、**実際に違反するファイルを作って確認するまで気付かなかった**。
+上の 3 件はどれも、**実際に違反するファイルを作って確認するまで気付かなかった**
+（最後の 1 件に至っては、ルールが正しく書けていても検出しようがなかった）。
 ルールを追加・変更したら、わざと違反させて検出されることと、
 **許可すべきものが通ること**の両方を確かめる。
 

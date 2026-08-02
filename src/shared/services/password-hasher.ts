@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect } from "effect";
 
 /**
  * パスワードのハッシュ化・照合を行うサービス。
@@ -20,13 +20,3 @@ export interface PasswordHasher {
 }
 export const PasswordHasher =
   Context.GenericTag<PasswordHasher>("PasswordHasher");
-
-/**
- * 本番実装: Bun ネイティブの argon2id (Bun.password の既定アルゴリズム) を使う。
- * ハッシュ化は失敗しない前提 (異常時は defect) のため、エラー型は never。
- */
-export const PasswordHasherLive = Layer.succeed(PasswordHasher, {
-  hash: (plainText) => Effect.promise(() => Bun.password.hash(plainText)),
-  verify: (plainText, hashed) =>
-    Effect.promise(() => Bun.password.verify(plainText, hashed)),
-});

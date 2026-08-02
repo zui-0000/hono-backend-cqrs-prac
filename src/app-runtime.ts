@@ -1,8 +1,8 @@
 import { Layer, type ManagedRuntime } from "effect";
 
 import { UserLayer } from "~/contexts/user/user-layer";
-import { PasswordHasherLive } from "~/shared/services/password-hasher";
-import { UuidGeneratorLive } from "~/shared/services/uuid-generator";
+import { PasswordHasherLive } from "~/shared/infrastructure/password-hasher-live";
+import { UuidGeneratorLive } from "~/shared/infrastructure/uuid-generator-live";
 
 /**
  * ここは Layer (提供側) と Runtime の型 (要求側) を **同じファイルに同居させている**。

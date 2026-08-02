@@ -26,7 +26,8 @@ src/
 │  ├─ errors/           # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  │                    #   + API が外に見せるコード体系（http-status / error-code）
-│  ├─ services/         # 横断サービス（採番・ハッシュ化）のポートと実装
+│  ├─ services/         # 横断サービス（採番・ハッシュ化）のポート（Context.Tag）
+│  ├─ infrastructure/   #   ↑ の本番実装（Layer）。合成ルートだけが参照する
 │  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）
 ├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
 └─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）

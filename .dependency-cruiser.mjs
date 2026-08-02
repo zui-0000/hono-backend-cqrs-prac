@@ -19,6 +19,25 @@
 /** コンテキスト内部の層 (他コンテキストから触られてはいけない)。 */
 const INTERNAL_LAYERS = "(infrastructure|presentation)";
 
+/**
+ * 実装 (アダプタ) の置き場。contexts と shared を同じ扱いにする。
+ *
+ * 横断サービス (採番・ハッシュ化) も、ポートは shared/services に、
+ * 実装は shared/infrastructure に分けて置く。同じファイルに同居させると
+ * ポートを import しただけで実装の依存まで引きずり込むうえ、
+ * ここのルールはモジュール単位で判定するため検出もできない。
+ */
+const IMPL_LAYER = "^src/(contexts/[^/]+|shared)/infrastructure/";
+
+/**
+ * 実装を知ってはいけない側。
+ * contexts の内側 3 層に加え、shared のうちポート・型・HTTP 基盤を置く層も含む。
+ * 実装を結線してよいのは合成ルート (src/app-runtime.ts) と各 *-layer.ts だけ。
+ */
+const PORT_SIDE =
+  "^src/(contexts/[^/]+/(domain|application|presentation)" +
+  "|shared/(domain|services|errors|presentation))/";
+
 /** 違反メッセージを 3 部構成に揃えるためのヘルパー。 */
 const message = ({ violation, reason, fix }) =>
   [`【違反】${violation}`, `【理由】${reason}`, `【対処】${fix}`].join("\n");
@@ -58,9 +77,11 @@ export default {
           "必要なのが副作用なら domain/ にポート (Context.Tag) を定義し、\n" +
           "実装は infrastructure/ に置いて Layer で注入します。",
       }),
-      from: { path: "^src/contexts/[^/]+/domain/" },
+      from: { path: "^src/(contexts/[^/]+|shared)/domain/" },
       to: {
-        path: "^src/contexts/[^/]+/(application|infrastructure|presentation)/",
+        path:
+          "^src/(contexts/[^/]+/(application|infrastructure|presentation)" +
+          "|shared/(infrastructure|presentation))/",
       },
     },
     {
@@ -78,7 +99,11 @@ export default {
           "どの実装を使うかを決めるのは合成ルート (src/app-runtime.ts) だけです。",
       }),
       from: { path: "^src/contexts/[^/]+/application/" },
-      to: { path: "^src/contexts/[^/]+/(infrastructure|presentation)/" },
+      to: {
+        path:
+          "^src/(contexts/[^/]+/(infrastructure|presentation)" +
+          "|shared/infrastructure)/",
+      },
     },
     {
       name: "presentation-not-to-impl",
@@ -94,15 +119,15 @@ export default {
           "必要な依存は handleWithEffect が受け取るランタイム経由で解決され、\n" +
           "実装の結線は src/app-runtime.ts が行います。",
       }),
-      from: { path: "^src/contexts/[^/]+/presentation/" },
-      to: { path: "^src/contexts/[^/]+/infrastructure/" },
+      from: { path: "^src/(contexts/[^/]+|shared)/presentation/" },
+      to: { path: IMPL_LAYER },
     },
     {
       name: "no-indirect-path-to-impl",
       severity: "error",
       comment: message({
         violation:
-          "domain / application / presentation から、何かを経由して infrastructure に到達しています。",
+          "ポート側の層から、何かを経由して infrastructure に到達しています。",
         reason:
           "直接 import していなくても、経路が繋がっていれば実装に依存していることに変わりません。\n" +
           "とくに Layer を束ねたファイル (合成ルートや *-layer.ts) を型のためだけに import すると、\n" +
@@ -113,20 +138,16 @@ export default {
           "例: ルーティングが要求するサービスの型は、Layer から導出せず\n" +
           "ポートを列挙して組み立てます (contexts/user/presentation/user-routes.ts の UserRuntime)。",
       }),
-      from: {
-        path: "^src/contexts/[^/]+/(domain|application|presentation)/",
-      },
-      to: {
-        path: "^src/contexts/[^/]+/infrastructure/",
-        reachable: true,
-      },
+      from: { path: PORT_SIDE },
+      to: { path: IMPL_LAYER, reachable: true },
     },
     {
       name: "db-only-from-infrastructure",
       severity: "error",
       comment: message({
         violation:
-          "domain / application / presentation が shared/db (Drizzle) を参照しています。",
+          "実装以外の層 (contexts の domain / application / presentation、\n" +
+          "および shared のポート側) が shared/db (Drizzle) を参照しています。",
         reason:
           "「どう保存するか」を知ってよいのは infrastructure だけです。\n" +
           "他の層が DB を知ると、テストに DB が必要になり、\n" +
@@ -136,9 +157,7 @@ export default {
           "必要な問い合わせが無ければ、まずポートにメソッドを足し、\n" +
           "その実装を infrastructure/ 側に書きます。",
       }),
-      from: {
-        path: "^src/contexts/[^/]+/(domain|application|presentation)/",
-      },
+      from: { path: PORT_SIDE },
       to: { path: "^src/shared/db/" },
     },
     {
