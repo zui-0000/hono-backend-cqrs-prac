@@ -104,3 +104,5 @@ pnpm lint:fix
   （ツリー、`contexts/` の理由、バレル不使用、`infrastructure/` の命名、ドメインサービス、応答の形）
 - [`docs/03-boundary-enforcement.md`](docs/03-boundary-enforcement.md) — 境界の機械的な強制
   （oxlint と dependency-cruiser の役割分担、層ごとの可否表、踏んだ落とし穴）
+- [`docs/04-backlog.md`](docs/04-backlog.md) — 積み残し
+  （テスト着手時に固定すべき挙動、未実装のユースケース、先送りした判断とその理由）
