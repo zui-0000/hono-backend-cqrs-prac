@@ -1,3 +1,5 @@
+import type { ErrorDetail } from "~/shared/errors/error-detail";
+
 import type { ErrorCode } from "./error-code";
 
 /**
@@ -13,24 +15,18 @@ import type { ErrorCode } from "./error-code";
  * そのため成功応答用の組み立て関数は無く、controller が素の値を返す。
  */
 
-/** エラーの詳細 (TypeSpec の ErrorDetail と対応)。 */
-export type ErrorDetailBody = {
-  readonly field: string;
-  readonly message: string;
-};
-
 /** エラー応答のボディ (TypeSpec の各 *Error モデルと対応)。 */
 export type ErrorBody = {
   readonly errorCode: ErrorCode;
   readonly message: string;
-  readonly details?: readonly ErrorDetailBody[];
+  readonly details?: readonly ErrorDetail[];
 };
 
 /** エラー応答のボディを組み立てる。時刻を含まなくなったため純粋な関数。 */
 export const errorBody = (params: {
   readonly errorCode: ErrorCode;
   readonly message: string;
-  readonly details?: readonly ErrorDetailBody[];
+  readonly details?: readonly ErrorDetail[];
 }): ErrorBody => ({
   errorCode: params.errorCode,
   message: params.message,

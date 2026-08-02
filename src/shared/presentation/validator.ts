@@ -3,8 +3,8 @@ import type { ParseError } from "effect/ParseResult";
 import type { Context } from "hono";
 
 import { BadRequestError } from "~/shared/errors/bad-request-error";
+import type { ErrorDetail } from "~/shared/errors/error-detail";
 
-import type { ErrorDetailBody } from "./error-body";
 import { ErrorMessage } from "./error-message";
 
 /**
@@ -41,7 +41,7 @@ const decodeOptions = { errors: "all" } as const;
  * ネストしたフィールドは "meta.respondedAt" のようにドット区切りで表現する。
  * path が空 (ボディ全体が不正など) の場合は "-" とする。
  */
-const toErrorDetails = (error: ParseError): readonly ErrorDetailBody[] =>
+const toErrorDetails = (error: ParseError): readonly ErrorDetail[] =>
   ParseResult.ArrayFormatter.formatErrorSync(error).map((issue) => ({
     field: issue.path.length === 0 ? "-" : issue.path.join("."),
     message: issue.message,

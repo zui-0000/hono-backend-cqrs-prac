@@ -1,10 +1,6 @@
 import { Data } from "effect";
 
-/** エラーの詳細 (フィールド単位の指摘)。TypeSpec の ErrorDetail と対応。 */
-export type ErrorDetail = {
-  readonly field: string;
-  readonly message: string;
-};
+import type { ErrorDetail } from "./error-detail";
 
 /**
  * リクエスト内容が不正 (汎用 / errorCode 4000 / HTTP 400)。
