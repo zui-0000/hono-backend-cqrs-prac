@@ -1,15 +1,16 @@
 import { Hono } from "hono";
 
-import { createUserController } from "~/contexts/user/presentation/create-user-controller";
-import { deleteUserController } from "~/contexts/user/presentation/delete-user-controller";
-import { getUserController } from "~/contexts/user/presentation/get-user-controller";
-import { updateUserController } from "~/contexts/user/presentation/update-user-controller";
-import type { AppRuntime } from "~/runtime";
+import type { AppRuntime } from "~/app-runtime";
+import { userRoutes } from "~/contexts/user/presentation/user-routes";
 
 /**
- * ルーティングを定義した Hono アプリを組み立てる。パスは TypeSpec の @route と対応する。
+ * アプリ全体を組み立てる。
  *
- * ランタイム (= 構築済みの依存) を引数で受け取り、各 controller に注入する。
+ * ここが知っているのは「どのコンテキストを、どのパスにマウントするか」だけ。
+ * 個々のエンドポイント (メソッド・ステータス・応答スキーマ) は各コンテキストの
+ * `*-routes.ts` が持つので、エンドポイントが増えてもこのファイルは育たない。
+ *
+ * ランタイム (= 構築済みの依存) を引数で受け取り、各ルータへ渡す。
  * 依存の差し替え点をこの一箇所に集めることで、テストでは fake の Layer から
  * 作ったランタイムを渡すだけで、HTTP 境界ごと検証できる。
  */
@@ -18,10 +19,7 @@ export const createApp = (runtime: AppRuntime) => {
 
   app.get("/health", (c) => c.json({ status: "ok" }));
 
-  app.post("/users", createUserController(runtime));
-  app.get("/users/:id", getUserController(runtime));
-  app.put("/users/:id", updateUserController(runtime));
-  app.delete("/users/:id", deleteUserController(runtime));
+  app.route("/users", userRoutes(runtime));
 
   return app;
 };

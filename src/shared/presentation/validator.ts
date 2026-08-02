@@ -4,14 +4,27 @@ import type { Context } from "hono";
 
 import { BadRequestError } from "~/shared/error/bad-request-error";
 
-import type { ErrorDetailBody } from "./response";
+import type { ErrorDetailBody } from "./error-body";
+import { ErrorMessage } from "./error-message";
 
 /**
  * presentation 層の検証ユーティリティ。
  *
- * 「入力源ごとの検証」と「ユースケース入力の組み立て」を分けている:
- *   - validateJson / validateParams / validateQuery … 各入力源が API 契約を満たすか
- *   - decodeInput                                   … 検証済みの値を合成してユースケース入力へ
+ * 「入力源ごとの検証」と「ユースケース入力の組み立て」を分けている。
+ *
+ * 入力源ごとの検証 (どれも API 契約の生成スキーマで検証する):
+ *   - validateJson   … ボディ             `c.req.json()`
+ *   - validateHeader … ヘッダ             `c.req.header()`
+ *   - validateParams … パスパラメータ     `c.req.param()`   例: /users/:id の :id
+ *   - validateQuery  … クエリパラメータ   `c.req.query()`   例: /users?page=2
+ *
+ * ユースケース入力の組み立て:
+ *   - decodeInput    … 検証済みの値を合成し、値オブジェクトへ変換する
+ *
+ * 名前の注意: パスパラメータとクエリパラメータはどちらも「パラメータ」だが、
+ * validateParams が扱うのは **パス** のほう。Hono 自身が `c.req.param()` /
+ * `c.req.query()` と呼び分けており、生成スキーマも `GetUserParams` (パス) なので
+ * それに揃えている。
  *
  * パスパラメータとボディを併用する、認証情報を混ぜる、ボディの一部だけ使う、
  * といった組み合わせにも対応できるよう、あえて 1 つの関数にまとめていない。
@@ -46,7 +59,7 @@ const decode = <A, I>(
     Effect.mapError(
       (error) =>
         new BadRequestError({
-          message: "リクエスト内容が不正です",
+          message: ErrorMessage.BadRequest,
           details: toErrorDetails(error),
         }),
     ),
@@ -62,7 +75,7 @@ export const validateJson = <A, I>(
       try: () => c.req.json(),
       catch: () =>
         new BadRequestError({
-          message: "リクエストボディを JSON として解釈できません",
+          message: ErrorMessage.MalformedJson,
         }),
     });
     return yield* decode(schema, raw);
@@ -93,7 +106,13 @@ export const validateParams = <A, I>(
   schema: Schema.Schema<A, I>,
 ): Effect.Effect<A, BadRequestError> => decode(schema, c.req.param());
 
-/** クエリパラメータを API 契約スキーマで検証する。 */
+/**
+ * クエリパラメータを API 契約スキーマで検証する。
+ *
+ * `c.req.query()` は繰り返し指定 (`?tag=a&tag=b`) のうち **最初の 1 つだけ** を返す。
+ * 配列で受けたい契約を作る場合は `c.req.queries()` に切り替える必要がある
+ * (現時点の契約に繰り返しパラメータは無いため query() で足りている)。
+ */
 export const validateQuery = <A, I>(
   c: Context,
   schema: Schema.Schema<A, I>,

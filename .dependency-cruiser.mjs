@@ -75,7 +75,7 @@ export default {
           "DB やフレームワークを替えただけでユースケースが壊れます。",
         fix:
           "ポート (domain/ の Repository や application/ の QueryService) 越しに使います。\n" +
-          "どの実装を使うかを決めるのは合成ルート (src/runtime.ts) だけです。",
+          "どの実装を使うかを決めるのは合成ルート (src/app-runtime.ts) だけです。",
       }),
       from: { path: "^src/contexts/[^/]+/application/" },
       to: { path: "^src/contexts/[^/]+/(infrastructure|presentation)/" },
@@ -92,10 +92,34 @@ export default {
         fix:
           "application の command / query を呼びます。\n" +
           "必要な依存は handleWithEffect が受け取るランタイム経由で解決され、\n" +
-          "実装の結線は src/runtime.ts が行います。",
+          "実装の結線は src/app-runtime.ts が行います。",
       }),
       from: { path: "^src/contexts/[^/]+/presentation/" },
       to: { path: "^src/contexts/[^/]+/infrastructure/" },
+    },
+    {
+      name: "no-indirect-path-to-impl",
+      severity: "error",
+      comment: message({
+        violation:
+          "domain / application / presentation から、何かを経由して infrastructure に到達しています。",
+        reason:
+          "直接 import していなくても、経路が繋がっていれば実装に依存していることに変わりません。\n" +
+          "とくに Layer を束ねたファイル (合成ルートや *-layer.ts) を型のためだけに import すると、\n" +
+          "そこから全アダプタへ経路が通ってしまいます。\n" +
+          "直接依存だけを見るルールはこれを検出できないため、到達可能性で塞いでいます。",
+        fix:
+          "型が欲しいだけならポート (Context.Tag) を直接 import します。\n" +
+          "例: ルーティングが要求するサービスの型は、Layer から導出せず\n" +
+          "ポートを列挙して組み立てます (contexts/user/presentation/user-routes.ts の UserRuntime)。",
+      }),
+      from: {
+        path: "^src/contexts/[^/]+/(domain|application|presentation)/",
+      },
+      to: {
+        path: "^src/contexts/[^/]+/infrastructure/",
+        reachable: true,
+      },
     },
     {
       name: "db-only-from-infrastructure",
@@ -147,7 +171,7 @@ export default {
           "shared を書き換えることになり、共有基盤が全体の変更点になります。",
         fix:
           "向きを逆にします (contexts が shared を使う)。\n" +
-          "実装同士の結線が必要な場合に限り、合成ルート (src/runtime.ts) に書きます。\n" +
+          "実装同士の結線が必要な場合に限り、合成ルート (src/app-runtime.ts) に書きます。\n" +
           "contexts を import してよいのはこのファイルだけです。",
       }),
       from: { path: "^src/shared/" },

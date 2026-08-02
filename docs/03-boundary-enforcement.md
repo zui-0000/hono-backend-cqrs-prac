@@ -18,19 +18,19 @@ oxlint は import 文の文字列しか見ないため、相対パスと `~/` �
 
 両ツールで同じ内容を強制している。
 
-| 参照元 →                           | domain | application | infrastructure | presentation | `shared/db` | `generated` |
-| ---------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
-| **domain**                         |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **application**                    |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **infrastructure**                 |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
-| **presentation**                   |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
-| **shared**                         |   ✗    |      ✗      |       ✗        |      ✗       |      ✓      |      ✗      |
-| **`src/runtime.ts`**（合成ルート） |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
+| 参照元 →                               | domain | application | infrastructure | presentation | `shared/db` | `generated` |
+| -------------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
+| **domain**                             |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **application**                        |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **infrastructure**                     |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
+| **presentation**                       |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
+| **shared**                             |   ✗    |      ✗      |       ✗        |      ✗       |      ✓      |      ✗      |
+| **`src/app-runtime.ts`**（合成ルート） |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
 
 - `generated`（API 契約の生成コード）に触れるのは **presentation だけ**。
   契約の型が内側へ漏れると、契約を変えるたびにドメインまで書き換えが波及する。
 - `shared/db`（Drizzle）に触れるのは **infrastructure だけ**。
-- **合成ルート（`src/runtime.ts`）だけが実装を知る。** 他はポート（`Context.Tag`）越しに使う。
+- **合成ルート（`src/app-runtime.ts`）だけが実装を知る。** 他はポート（`Context.Tag`）越しに使う。
 
 ---
 
@@ -64,7 +64,7 @@ const message = ({ violation, reason, fix }) =>
 ```
 
 【対処】には抽象論ではなく**このプロジェクトの実物**を書く（`UserRepository`、
-`src/runtime.ts`、`decodeInput` など）。「禁止です」ではなく「代わりにこう書く」まで言う。
+`src/app-runtime.ts`、`decodeInput` など）。「禁止です」ではなく「代わりにこう書く」まで言う。
 
 > **注意**: 既定の `err` レポーターは `comment` を**表示しない**。
 > `package.json` の `check:deps` で `--output-type err-long` を指定している。

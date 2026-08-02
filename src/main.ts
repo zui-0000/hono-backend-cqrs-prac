@@ -1,7 +1,7 @@
 import { ManagedRuntime } from "effect";
 
 import { createApp } from "~/app";
-import { AppLayer } from "~/runtime";
+import { AppLayer } from "~/app-runtime";
 
 // エントリポイント。本番の依存 (AppLayer) からランタイムを一度だけ構築し、
 // それを注入したアプリを Bun のサーバとして公開する。

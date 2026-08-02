@@ -1,7 +1,10 @@
-import type { ErrorCode } from "~/shared/error/error-code";
+import type { ErrorCode } from "./error-code";
 
 /**
- * 応答ボディの型 (TypeSpec の各モデルと対応)。
+ * エラー応答のボディの型と組み立て (TypeSpec の各 *Error モデルと対応)。
+ *
+ * status を含む応答全体の組み立ては handle-error-response.ts が行う。
+ * ここが持つのは「ボディの形」だけ。
  *
  * 成功応答は封筒 (envelope) で包まず、リソースの内容をそのまま返す。
  * 以前は result / meta で包んでいたが、meta の中身 (respondedAt) は

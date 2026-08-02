@@ -2,13 +2,15 @@ import type { ContentfulStatusCode } from "hono/utils/http-status";
 
 import type { BadRequestError } from "~/shared/error/bad-request-error";
 import type { ConflictError } from "~/shared/error/conflict-error";
-import { ErrorCode } from "~/shared/error/error-code";
 import type { MailAddressAlreadyExistsError } from "~/shared/error/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/error/repository-error";
 import type { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
 import type { UnauthorizedError } from "~/shared/error/unauthorized-error";
 
-import { type ErrorBody, errorBody } from "./response";
+import { type ErrorBody, errorBody } from "./error-body";
+import { ErrorCode } from "./error-code";
+import { ErrorMessage } from "./error-message";
+import { HttpStatus } from "./http-status";
 
 /**
  * presentation 層が HTTP に翻訳できるエラーの集合。
@@ -50,12 +52,12 @@ export const handleErrorResponse = (
   error: ApplicationError,
 ): HttpErrorResponse => {
   switch (error._tag) {
-    // ---- 400 Bad Request ----
+    // ---- 400 Bad Request (汎用) ----
     // リクエストが不正 (検証違反・JSON として読めない等)。
     // 違反フィールドは validator が details に詰めている。
     case "BadRequestError":
       return {
-        status: 400,
+        status: HttpStatus.BadRequest,
         body: errorBody({
           errorCode: ErrorCode.BadRequest,
           message: error.message,
@@ -63,30 +65,30 @@ export const handleErrorResponse = (
         }),
       };
 
-    // ---- 401 Unauthorized ----
+    // ---- 401 Unauthorized (汎用) ----
     case "UnauthorizedError":
       return {
-        status: 401,
+        status: HttpStatus.Unauthorized,
         body: errorBody({
           errorCode: ErrorCode.Unauthorized,
           message: error.message,
         }),
       };
 
-    // ---- 404 Not Found ----
+    // ---- 404 Not Found (汎用) ----
     case "ResourceNotFoundError":
       return {
-        status: 404,
+        status: HttpStatus.NotFound,
         body: errorBody({
           errorCode: ErrorCode.ResourceNotFound,
-          message: error.message,
+          message: ErrorMessage.NotFound,
         }),
       };
 
     // ---- 409 Conflict (汎用) ----
     case "ConflictError":
       return {
-        status: 409,
+        status: HttpStatus.Conflict,
         body: errorBody({
           errorCode: ErrorCode.Conflict,
           message: error.message,
@@ -96,10 +98,10 @@ export const handleErrorResponse = (
     // ---- 409 Conflict (メールアドレスの重複) ----
     case "MailAddressAlreadyExistsError":
       return {
-        status: 409,
+        status: HttpStatus.Conflict,
         body: errorBody({
           errorCode: ErrorCode.MailAddressAlreadyExists,
-          message: "メールアドレスが既に使用されています",
+          message: ErrorMessage.MailAddressAlreadyExists,
         }),
       };
 
@@ -107,10 +109,10 @@ export const handleErrorResponse = (
     // インフラ由来の失敗。原因 (cause) は外部に露出せず、ログにのみ残す。
     case "RepositoryError":
       return {
-        status: 500,
+        status: HttpStatus.InternalServerError,
         body: errorBody({
           errorCode: ErrorCode.InternalServerError,
-          message: "サーバーで予期せぬエラーが発生しました",
+          message: ErrorMessage.InternalServerError,
         }),
       };
   }

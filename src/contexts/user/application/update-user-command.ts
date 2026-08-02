@@ -35,10 +35,7 @@ export const updateUserCommand = (
     const user = yield* userRepository.findById(input.id).pipe(
       Effect.flatMap(
         Option.match({
-          onNone: () =>
-            new ResourceNotFoundError({
-              message: "指定されたユーザーは存在しません",
-            }),
+          onNone: () => new ResourceNotFoundError(),
           onSome: Effect.succeed,
         }),
       ),

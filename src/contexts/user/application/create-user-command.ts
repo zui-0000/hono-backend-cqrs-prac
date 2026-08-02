@@ -7,10 +7,9 @@ import type { UuidGenerator } from "~/shared/service/uuid-generator";
 
 import { createUser } from "../domain/model/user";
 import { UserHashedPassword } from "../domain/model/vo/user-hashed-password";
-import type { UserId } from "../domain/model/vo/user-id";
 import { checkMailAddressDuplication } from "../domain/service/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
-import type { CreateUserCommandInput } from "./dto";
+import type { CreateUserCommandInput, CreateUserCommandOutput } from "./dto";
 
 /**
  * ユーザーを新規作成する (CQRS のコマンド)。
@@ -22,15 +21,12 @@ import type { CreateUserCommandInput } from "./dto";
  *
  * 失敗 (E) と依存 (R) がすべて型に現れる = throw を使わない。
  *
- * 返すのは採番された id だけ。CQRS では「コマンドは値を返さない」のが原則だが、
- * 採番した識別子は例外として返す。id はサーバー側でしか決まらず、これを返さないと
- * クライアントは作ったリソースを二度と参照できないため (GET /users/{id} が呼べない)。
- * 集約そのものは外に出さない。
+ * 返すのは採番された id だけ (理由は dto.ts の CreateUserCommandOutput を参照)。
  */
 export const createUserCommand = (
   input: CreateUserCommandInput,
 ): Effect.Effect<
-  UserId,
+  CreateUserCommandOutput,
   MailAddressAlreadyExistsError | RepositoryError,
   UserRepository | PasswordHasher | UuidGenerator
 > =>

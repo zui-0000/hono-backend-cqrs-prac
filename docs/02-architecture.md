@@ -11,18 +11,21 @@
 schema/                 # TypeSpec による API 契約（OpenAPI 3.1 を出力）
 src/
 ├─ main.ts              # エントリ（Bun）。本番の Layer から runtime を作り app に注入
-├─ app.ts               # Hono アプリの組み立て（ルーティング + runtime の注入点）
-├─ runtime.ts           # 合成ルート。Layer の結線（contexts を知る唯一の層）
+├─ app.ts               # コンテキストをパスにマウントするだけ（1 コンテキスト 1 行）
+├─ app-runtime.ts       # 合成ルート。各 *-layer.ts を束ねる（contexts を知る唯一の層）
 ├─ contexts/            # 境界づけられたコンテキスト単位で縦に切る
 │  └─ <context>/        #   例: user / auth
+│     ├─ <ctx>-layer.ts   #   提供側: このコンテキストの実装（infrastructure を知る）
+│     ├─ <ctx>-runtime.ts #   要求側: 動かすのに必要なサービス（ポートだけを知る）
 │     ├─ domain/        #     model/（集約・値オブジェクト）, service/（ドメインサービス）, ポート
 │     ├─ application/   #     command / query（CQRS）
 │     ├─ infrastructure/#     テーブル定義 / リポジトリ実装（domain ↔ DB 変換, Layer）
-│     └─ presentation/  #     controller（HTTP ↔ Effect の境界）
+│     └─ presentation/  #     <ctx>-routes.ts（HTTP 契約の宣言）+ controller
 ├─ shared/
 │  ├─ domain/           # コンテキストを跨ぐ値オブジェクト（Uuid / MailAddress / Password）
-│  ├─ error/            # API エラーカタログ（errorCode 体系と型付きエラー）
+│  ├─ error/            # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
+│  │                    #   + API が外に見せるコード体系（http-status / error-code）
 │  ├─ service/          # 横断サービス（採番・ハッシュ化）のポートと実装
 │  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）
 ├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
@@ -32,7 +35,7 @@ docs/                   # 設計と学びの記録
 
 要点を先に挙げると:
 
-- **依存の向きは常に内向き。** 「どの実装を使うか」を知るのは `src/runtime.ts`（合成ルート）だけ。
+- **依存の向きは常に内向き。** 「どの実装を使うか」を知るのは `src/app-runtime.ts`（合成ルート）だけ。
   controller は `createApp(runtime)` 経由でランタイムを受け取るため、テストでは Layer を
   差し替えて DB なしで HTTP 境界ごと検証できる。
 - **コンテキストを跨ぐ参照はポート（`domain/`・`application/` の interface）に限る。**

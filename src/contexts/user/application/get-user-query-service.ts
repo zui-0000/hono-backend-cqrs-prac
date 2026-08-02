@@ -2,7 +2,7 @@ import { Context, type Effect, type Option } from "effect";
 
 import type { RepositoryError } from "~/shared/error/repository-error";
 
-import type { UserDto } from "./dto";
+import type { GetUserQueryOutput } from "./dto";
 
 /**
  * ユーザー取得クエリのポート (読み取り側 / CQRS のクエリ経路)。
@@ -21,7 +21,7 @@ export interface GetUserQueryService {
   /** id でユーザーを取得する (存在しなければ Option.none)。 */
   readonly execute: (
     id: string,
-  ) => Effect.Effect<Option.Option<UserDto>, RepositoryError>;
+  ) => Effect.Effect<Option.Option<GetUserQueryOutput>, RepositoryError>;
 }
 export const GetUserQueryService = Context.GenericTag<GetUserQueryService>(
   "GetUserQueryService",

@@ -3,14 +3,14 @@ import { describe, expect, test } from "bun:test";
 import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
 
 import { createApp } from "~/app";
-import type { UserDto } from "~/contexts/user/application/dto";
+import type { AppRuntime } from "~/app-runtime";
+import type { GetUserQueryOutput } from "~/contexts/user/application/dto";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { User } from "~/contexts/user/domain/model/user";
 import { UserHashedPassword } from "~/contexts/user/domain/model/vo/user-hashed-password";
 import { UserId } from "~/contexts/user/domain/model/vo/user-id";
 import { UserName } from "~/contexts/user/domain/model/vo/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
-import type { AppRuntime } from "~/runtime";
 import { MailAddress } from "~/shared/domain/mail-address";
 import { PasswordHasher } from "~/shared/service/password-hasher";
 import { UuidGenerator } from "~/shared/service/uuid-generator";
@@ -173,7 +173,10 @@ describe("POST /users", () => {
 
 describe("GET /users/:id", () => {
   test("正常系: 200 を返し、契約どおり name / mailAddress のみを含む", async () => {
-    const dto: UserDto = { name: "アスカ", mailAddress: "asuka@example.com" };
+    const dto: GetUserQueryOutput = {
+      name: "アスカ",
+      mailAddress: "asuka@example.com",
+    };
     const runtime = makeRuntime({
       getUserQueryService: { execute: () => Effect.succeed(Option.some(dto)) },
     });

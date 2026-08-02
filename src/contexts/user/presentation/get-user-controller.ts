@@ -1,43 +1,33 @@
 import { Effect, Option } from "effect";
 
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
-import {
-  GetUser200Response,
-  GetUserHeader,
-  GetUserParams,
-} from "~/generated/users";
+import type { GetUserParams } from "~/generated/users";
 import { ResourceNotFoundError } from "~/shared/error/resource-not-found-error";
-import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
-import { validateParams } from "~/shared/presentation/validator";
+
+/** 受け取る検証済みの入力。user-routes.ts の request 宣言と対応する。 */
+type GetUserControllerInput = { params: typeof GetUserParams.Type };
 
 /**
  * ID を指定してユーザーを取得する (GET /users/{id})。
  *
+ * リクエストの契約検証 (ヘッダ / パスパラメータ) と応答の組み立ては
+ * user-routes.ts が行う。
  * 契約上は要認証 (Bearer) だが、認証は auth コンテキストの実装後に追加する。
  */
-export const getUserController = handleWithEffect(
-  200,
-  GetUser200Response,
-  GetUserHeader,
-  (c) =>
-    Effect.gen(function* () {
-      const params = yield* validateParams(c, GetUserParams);
-      const getUserQueryService = yield* GetUserQueryService;
+export const getUserController = ({ params }: GetUserControllerInput) =>
+  Effect.gen(function* () {
+    const getUserQueryService = yield* GetUserQueryService;
 
-      // 存在しない id は「見つからない」として 404 に翻訳する。
-      const user = yield* getUserQueryService.execute(params.id).pipe(
-        Effect.flatMap(
-          Option.match({
-            onNone: () =>
-              new ResourceNotFoundError({
-                message: "指定されたユーザーは存在しません",
-              }),
-            onSome: Effect.succeed,
-          }),
-        ),
-      );
+    // 存在しない id は「見つからない」として 404 に翻訳する。
+    const user = yield* getUserQueryService.execute(params.id).pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => new ResourceNotFoundError(),
+          onSome: Effect.succeed,
+        }),
+      ),
+    );
 
-      // 契約が返すのは name / mailAddress のみ (DTO をそのまま流さない)。
-      return { name: user.name, mailAddress: user.mailAddress };
-    }),
-);
+    // 契約が返すのは name / mailAddress のみ (DTO をそのまま流さない)。
+    return { name: user.name, mailAddress: user.mailAddress };
+  });
