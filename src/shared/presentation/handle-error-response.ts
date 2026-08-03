@@ -65,6 +65,21 @@ const errorBody = (params: {
 });
 
 /**
+ * 型付きエラーに翻訳できない失敗 (defect) に対する応答。
+ *
+ * defect は ApplicationError ではないので handleErrorResponse では扱えないが、
+ * 外に見せる形は 500 と同じでなければならない (契約の InternalServerError)。
+ * 応答ボディの組み立てを 1 箇所に保つため、翻訳表と同じこのファイルに置く。
+ */
+export const defectResponse: HttpErrorResponse = {
+  status: HttpStatus.InternalServerError,
+  body: errorBody({
+    errorCode: ErrorCode.InternalServerError,
+    message: ErrorMessage.InternalServerError,
+  }),
+};
+
+/**
  * ドメイン/アプリケーションのエラーを HTTP 応答へ翻訳する。
  * バックエンド全体のエラーハンドリングを司る唯一の窓口。
  *

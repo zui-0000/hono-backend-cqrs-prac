@@ -1,9 +1,10 @@
-import { Effect } from "effect";
+import { Cause, Effect } from "effect";
 import type { Context } from "hono";
 
 import { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import { HttpHeader } from "./constants/http-header";
+import { HttpStatus } from "./constants/http-status";
 import type { ApplicationError } from "./handle-error-response";
 
 /**
@@ -84,3 +85,28 @@ export const logFailure = (
 
   return log;
 };
+
+/**
+ * 型付きエラーに翻訳できなかった失敗 (defect) を記録する。
+ *
+ * defect は E チャネルに現れないため logFailure では拾えない。放っておくと
+ * catchAll をすり抜けて runPromise が reject し、Hono 既定の平文 500 が返って
+ * **相関 ID の付いたログが 1 行も残らない**。ここが最後の受け皿になる。
+ *
+ * 原因は Cause.pretty でスタックごと残す。defect は「起きてはいけないこと」で、
+ * 外部には定型の 500 しか返さない以上、原因を辿る手掛かりはログにしかない。
+ */
+export const logDefect = (
+  c: Context,
+  requestId: string,
+  cause: Cause.Cause<never>,
+): Effect.Effect<void> =>
+  Effect.logError("リクエストの処理が異常終了しました").pipe(
+    Effect.annotateLogs({
+      requestId,
+      method: c.req.method,
+      path: c.req.path,
+      status: HttpStatus.InternalServerError,
+      defect: Cause.pretty(cause),
+    }),
+  );

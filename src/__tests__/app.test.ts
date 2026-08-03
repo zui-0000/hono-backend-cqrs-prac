@@ -236,6 +236,32 @@ describe("GET /users/:id", () => {
       details: [{ field: "id" }],
     });
   });
+
+  test("異常系: 契約とズレた応答は defect となり、契約どおりの 500 を返す", async () => {
+    // 射影が契約を満たさない状況 (mailAddress が文字列でない)。
+    // handleWithEffect の orDie で defect になり、E チャネルには現れない。
+    const runtime = makeRuntime({
+      getUserQueryService: {
+        execute: () =>
+          Effect.succeed(
+            Option.some({
+              name: "アスカ",
+              mailAddress: 42 as unknown as string,
+            }),
+          ),
+      },
+    });
+
+    const response = await getUser(runtime, FIXED_UUID);
+
+    // Hono 既定の平文 500 ではなく、契約の InternalServerError が返る。
+    expect(response.status).toBe(HttpStatus.InternalServerError);
+    expect(await response.json()).toMatchObject({
+      errorCode: ErrorCode.InternalServerError,
+    });
+    // defect 経路でも相関 ID は失われない (ログと突き合わせられる)。
+    expect(response.headers.get(HttpHeader.RequestId)).toBe(REQUEST_ID);
+  });
 });
 
 describe("PUT /users/:id", () => {

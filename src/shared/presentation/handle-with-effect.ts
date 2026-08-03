@@ -8,9 +8,10 @@ import { HttpHeader } from "./constants/http-header";
 import { HttpStatus } from "./constants/http-status";
 import {
   type ApplicationError,
+  defectResponse,
   handleErrorResponse,
 } from "./handle-error-response";
-import { logFailure, resolveRequestId } from "./request-log";
+import { logDefect, logFailure, resolveRequestId } from "./request-log";
 import {
   validateHeader,
   validateJson,
@@ -125,6 +126,12 @@ const validateRequest = <Req extends RequestSchemas>(
  * 内部で何が起きたかは logFailure がサーバーログに残す
  * (外部には定型メッセージのみ返し、原因は露出させない)。
  * 相関 ID は応答ヘッダとログの双方に載せ、フロントエンドのログと突き合わせられる。
+ *
+ * defect (orDie / die で落とした失敗) は E チャネルに現れないため catchAll では
+ * 拾えない。放っておくと runPromise が reject して Hono 既定の平文 500 が返り、
+ * 契約と違う形の応答になったうえログも残らないので、ここで最後に受け止める。
+ * **この受け皿は 1 箇所で全 orDie を覆う** — 応答スキーマ違反 (下の orDie)、
+ * DB 行の復元失敗、ハッシュ形式の破れ、いずれも同じ経路を通る。
  */
 const handle =
   <A, Req extends RequestSchemas, R>(
@@ -151,6 +158,12 @@ const handle =
               Effect.map(() => c.json(response.body, response.status)),
             );
           }),
+          // 記録と応答を分けているのは、tapDefect が Cause (スタックを持つ) を、
+          // catchAllDefect が defect そのものを渡すため。原因を厚く残せる前者で記録する。
+          Effect.tapDefect((cause) => logDefect(c, requestId, cause)),
+          Effect.catchAllDefect(() =>
+            Effect.succeed(c.json(defectResponse.body, defectResponse.status)),
+          ),
         );
       }),
     );
@@ -179,7 +192,8 @@ const isContentful = <A, ResponseA, ResponseI, Req extends RequestSchemas, R>(
  * - **controller** … 検証済みの入力を受け取り、応答の中身を返す
  *
  * 応答ボディは返す直前に API 契約 (生成スキーマ) で検証する。
- * 契約とずれた応答はバグなので defect (orDie) として扱い、早期に気付けるようにする。
+ * 契約とずれた応答はバグなので defect (orDie) として扱い、早期に気付けるようにする
+ * (クライアントへは handle の受け皿が契約どおりの 500 に翻訳する)。
  *
  * 戻り値は Handler ではなく「ランタイムを受け取ると Handler になる関数」。
  * Effect は R (依存) が解決されるまで実行できず、その解決を行うのが
