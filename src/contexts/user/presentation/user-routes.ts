@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 
 import {
+  ChangePasswordBody,
+  ChangePasswordHeader,
+  ChangePasswordParams,
   CreateUser201Response,
   CreateUserBody,
   CreateUserHeader,
@@ -17,6 +20,7 @@ import { HttpStatus } from "~/shared/presentation/constants/http-status";
 import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
 
 import type { UserRuntime } from "../user-runtime";
+import { changePasswordController } from "./change-password-controller";
 import { createUserController } from "./create-user-controller";
 import { deleteUserController } from "./delete-user-controller";
 import { getUserController } from "./get-user-controller";
@@ -64,6 +68,19 @@ export const userRoutes = (runtime: UserRuntime): Hono => {
       },
       response: { status: HttpStatus.NoContent },
       controller: updateUserController,
+    })(runtime),
+  );
+
+  routes.put(
+    "/:id/password",
+    handleWithEffect({
+      request: {
+        header: ChangePasswordHeader,
+        body: ChangePasswordBody,
+        params: ChangePasswordParams,
+      },
+      response: { status: HttpStatus.NoContent },
+      controller: changePasswordController,
     })(runtime),
   );
 

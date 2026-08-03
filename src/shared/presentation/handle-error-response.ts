@@ -97,7 +97,7 @@ export const handleErrorResponse = (
         status: HttpStatus.Unauthorized,
         body: errorBody({
           errorCode: ErrorCode.Unauthorized,
-          message: error.message,
+          message: ErrorMessage.Unauthorized,
         }),
       };
 

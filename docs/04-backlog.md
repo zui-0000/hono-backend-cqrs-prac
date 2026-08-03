@@ -7,7 +7,7 @@
 
 ## テスト着手時に固定すべきこと
 
-現在のテストは HTTP 境界の統合テストのみ（`src/__tests__/app.test.ts`, 14 ケース）。
+現在のテストは HTTP 境界の統合テストのみ（`src/__tests__/app.test.ts`, 18 ケース）。
 **形が固まってからまとめて書く**方針。実際この判断は正しく機能していて、
 プレゼンテーション層を 13 段階作り替えた際、HTTP 境界のテストは 1 行も変えずに通り続けた
 （安定した縫い目にだけテストを置いているため）。
@@ -17,14 +17,17 @@
 作り替えの過程で見つかった罠は、いずれも既にテストで固定してある。
 **重複して書かないこと**（どれも「壊れると気付きにくい」類なので、消さないこと）。
 
-| 対象                          | 固定されている挙動                             | 壊れたときに起きること                     |
-| ----------------------------- | ---------------------------------------------- | ------------------------------------------ |
-| `checkMailAddressDuplication` | `excluding` が自分の id なら重複と見なさない   | 「メールアドレスを変えない更新」が常に 409 |
-| `checkMailAddressDuplication` | 他人が使っていれば 409                         | 重複を素通しし、DB の unique 制約で 500    |
-| `changeUserProfile`           | `updatedAt` だけ進み `createdAt` は据え置き    | 作成日時が更新のたびに書き換わる           |
-| `changeUserProfile`           | 元の集約は書き換わらない（新しい値を返す）     | 呼び出し側が握っている集約に変更が波及する |
-| `handleWithEffect`            | `status: 204` は本文を持たない                 | 契約と異なる応答を返す                     |
-| `handleWithEffect`            | 応答は契約スキーマどおり（余分な項目が出ない） | 射影で落としたはずの項目が漏れる           |
+| 対象                          | 固定されている挙動                                 | 壊れたときに起きること                     |
+| ----------------------------- | -------------------------------------------------- | ------------------------------------------ |
+| `checkMailAddressDuplication` | `excluding` が自分の id なら重複と見なさない       | 「メールアドレスを変えない更新」が常に 409 |
+| `checkMailAddressDuplication` | 他人が使っていれば 409                             | 重複を素通しし、DB の unique 制約で 500    |
+| `changeUserProfile`           | `updatedAt` だけ進み `createdAt` は据え置き        | 作成日時が更新のたびに書き換わる           |
+| `changeUserProfile`           | 元の集約は書き換わらない（新しい値を返す）         | 呼び出し側が握っている集約に変更が波及する |
+| `handleWithEffect`            | `status: 204` は本文を持たない                     | 契約と異なる応答を返す                     |
+| `handleWithEffect`            | 応答は契約スキーマどおり（余分な項目が出ない）     | 射影で落としたはずの項目が漏れる           |
+| `verifyUserPassword`          | 照合に渡すのは「現在の平文」と「保存済みハッシュ」 | 新旧を取り違え、どんな平文でも通る         |
+| `changePasswordCommand`       | 401 のときは永続化が走らない                       | 照合に失敗してもパスワードが変わる         |
+| `changeUserPassword`          | 変わるのは hashedPassword と updatedAt だけ        | 名前・メールアドレス・作成日時が巻き戻る   |
 
 ### まだ埋まっていない穴
 
@@ -52,14 +55,6 @@
 ---
 
 ## 実装の積み残し
-
-### `changePassword`（契約は定義済み）
-
-`PUT /users/{id}/password`。契約・生成スキーマともに揃っているので、実装だけ。
-
-**着手時の論点**: `currentPassword` の照合を**ドメインサービスに置くか command に置くか**。
-メールアドレスの重複チェックは「集約をまたぐ業務ルール」なのでドメインサービスにしたが、
-パスワード照合は `PasswordHasher`（技術サービス）が絡むため、**結論が変わる可能性がある**。
 
 ### `auth` コンテキスト（契約は定義済み）
 
@@ -104,10 +99,14 @@
 
 ### 未使用のエラークラス
 
-`ConflictError` / `InternalServerError` / `UnauthorizedError` は一度も `new` されていない。
-`UnauthorizedError` は auth で確実に使う。`ConflictError` は汎用 409 として出番がありうる。
+`ConflictError` / `InternalServerError` は一度も `new` されていない。
+`ConflictError` は汎用 409 として出番がありうる。
 `InternalServerError` は 500 を `RepositoryError` の翻訳経由で出しているため、
 **直接 new する場面が無い可能性が高い**（auth 実装後も使われなければ削除を検討する）。
+
+`UnauthorizedError` は `changePassword` で使い始めた。その際、`ResourceNotFoundError` に
+倣って `message` フィールドを落としている（文言を決めるのは presentation の責務。
+認証の失敗はどこで失敗したかを書き分けてはいけない種類のエラーでもある）。
 
 ### `handleWithEffect` の型の複雑さ
 

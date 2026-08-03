@@ -1,7 +1,10 @@
 import { Effect, Schema } from "effect";
 
 import { MailAddress } from "~/shared/domain/value-objects/mail-address";
+import type { Password } from "~/shared/domain/value-objects/password";
+import { UnauthorizedError } from "~/shared/errors/unauthorized-error";
 import { now } from "~/shared/services/clock";
+import { PasswordHasher } from "~/shared/services/password-hasher";
 import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import { UserHashedPassword } from "./value-objects/user-hashed-password";
@@ -68,6 +71,57 @@ export const changeUserProfile = (
       ...user,
       name: params.name,
       mailAddress: params.mailAddress,
+      updatedAt: timestamp,
+    })),
+  );
+
+/**
+ * 渡された平文が、このユーザーの現在のパスワードであることを確かめる。
+ * 一致しなければ UnauthorizedError (401) で失敗する。
+ *
+ * **ドメインサービスではなく集約に置いている。** 「同じメールアドレスの人が他に
+ * 居るか」と違って、この問いは User 集約 1 つを見れば答えが出るため、
+ * 集約に属さない操作の受け皿であるドメインサービスの条件を満たさない。
+ *
+ * 一方でユースケースの方針 (404 の扱いなど) でもない。
+ * 「パスワード変更のとき現在のパスワードを確認するか」はビジネス側に聞ける問い
+ * (確認せず再ログインを求める製品もある) なので、業務ルールとして内側に置く。
+ *
+ * ハッシュ照合という副作用が要るが、依存するのは shared/services のポートだけで
+ * 実装 (Bun.password) は知らない。createUser が UuidGenerator を、
+ * changeUserProfile が Clock を要求するのと同じ形で R に現れる。
+ */
+export const verifyUserPassword = (
+  user: User,
+  plainText: Password,
+): Effect.Effect<void, UnauthorizedError, PasswordHasher> =>
+  Effect.gen(function* () {
+    const passwordHasher = yield* PasswordHasher;
+    const matched = yield* passwordHasher.verify(
+      plainText,
+      user.hashedPassword,
+    );
+    if (!matched) {
+      return yield* new UnauthorizedError();
+    }
+  });
+
+/**
+ * パスワードを変更した集約を返す (changeUserProfile と同じくイミュータブル)。
+ *
+ * 受け取るのはハッシュ済みの値だけで、平文も本人確認もここには現れない。
+ * 照合は verifyUserPassword、ハッシュ化は application 層の責務で、
+ * この関数は「状態がどう変わるか」だけを担う
+ * (ドメインは平文を持たない、という値オブジェクトの取り決めがそのまま効く)。
+ */
+export const changeUserPassword = (
+  user: User,
+  hashedPassword: UserHashedPassword,
+): Effect.Effect<User> =>
+  now.pipe(
+    Effect.map((timestamp) => ({
+      ...user,
+      hashedPassword,
       updatedAt: timestamp,
     })),
   );
