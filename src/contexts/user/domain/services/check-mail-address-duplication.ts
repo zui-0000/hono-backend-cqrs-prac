@@ -1,6 +1,6 @@
 import { Effect, Option } from "effect";
 
-import type { MailAddress } from "~/shared/domain/value-objects/mail-address";
+import type { MailAddress } from "~/shared/domain/model/value-objects/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/errors/repository-error";
 

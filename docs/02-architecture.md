@@ -22,15 +22,14 @@ src/
 │     ├─ infrastructure/#     テーブル定義 / リポジトリ実装（domain ↔ DB 変換, Layer）
 │     └─ presentation/  #     <ctx>-routes.ts（HTTP 契約の宣言）+ controller
 ├─ shared/
-│  ├─ domain/           # 共有カーネル。uuid.ts（brand なしの形式スキーマ）と
-│  │                    #   value-objects/（MailAddress / Password）に分ける
+│  ├─ domain/           # 共有カーネル。model/ が語彙（uuid.ts + value-objects/）、
+│  │                    #   直下はドメインが環境から得るもの（時刻 / 採番 / ハッシュ化）
 │  ├─ application/      # ユースケースの共通部品（orNotFound）。層で切った並びの一員
 │  ├─ errors/           # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  │  └─ constants/     #   API が外に見せる語彙。公開するのが `as const` の表と
 │  │                    #   派生型だけのファイルを置く（振る舞いを持つものは直下）
-│  ├─ services/         # 横断サービス（採番・ハッシュ化）のポート（Context.Tag）
-│  ├─ infrastructure/   #   ↑ の本番実装（Layer）。合成ルートだけが参照する
+│  ├─ infrastructure/   # 横断ポートの本番実装（Layer）。合成ルートだけが参照する
 │  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）
 ├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
 └─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）
@@ -183,6 +182,100 @@ glob を取れるため、ファイルを分けても migration は 1 系列で�
 
 応答ボディの「形」（`{ id: ... }` のようなラップ）は契約側の関心なので持ち込まない。
 presentation が契約の形へ詰め替える。
+
+---
+
+## ポートは、それを要求する層に置く
+
+`Context.Tag` で宣言するポートは、**それを必要とする層の中**に置く。実装だけが
+`infrastructure/` に出る。`domain-not-to-outer` の違反メッセージに書いてあるとおり
+「必要なのが副作用なら `domain/` にポートを定義し、実装は `infrastructure/` に置いて
+`Layer` で注入する」——この規約はコンテキストの中でも `shared/` でも同じ。
+
+```text
+contexts/user/domain/                shared/domain/
+├─ model/              語彙          ├─ model/               語彙
+│  ├─ user.ts                        │  ├─ uuid.ts
+│  └─ value-objects/                 │  └─ value-objects/
+├─ services/           業務ルール    ├─ clock.ts             ┐
+└─ user-repository.ts  ← 直下        ├─ password-hasher.ts   ├ ← 直下
+                                     └─ uuid-generator.ts    ┘
+```
+
+**規約は 1 行で言える** — `model/` は語彙、`services/` は業務ルール、
+**直下に置かれるのはドメインが環境から得るもの**。`contexts/<ctx>/domain/` で
+`user-repository.ts` が直下に転がっているのと同じ枠で、`shared/` 側もそれに揃えた。
+
+### 「ポート」という語について
+
+`Context.Tag` で宣言するものを、このリポジトリでは散文で「ポート」と呼ぶ。
+ただし**これはヘキサゴナルアーキテクチャ（Ports and Adapters）の語彙**であって、
+DDD でも Effect でもない。Effect 自身は **Service**（部品）/ **Tag**（識別子）/
+**Layer**（構築）と呼び、`R` は requirements。
+
+| このリポジトリ | Effect         | ヘキサゴナル |
+| -------------- | -------------- | ------------ |
+| ポート         | Service（Tag） | Port         |
+| `*Live`        | Layer          | Adapter      |
+| 依存           | Requirements   | —            |
+
+**説明の言葉として借りるのは構わないが、ディレクトリ名にはしない。**
+散文の「ポート」は読み手の理解を助けるだけだが、ディレクトリ名にすると
+「全員がそこへ物を仕分ける基準」になる。基準は自分たちの語彙
+（DDD の `model` / `services` / `value-objects`）で持つ。
+
+そのため `shared/domain/ports/` は作らず、直下に置いて
+「直下 = 環境から得るもの」という位置で語らせている。
+`clock.ts` が Tag を宣言していない（時刻の抽象化は Effect の `Clock` が持つ）ことも、
+この分け方なら例外にならない。**Tag の有無は「どうやって」の話**で、
+「何であるか」の分類軸には使わない。
+
+横断サービス（時刻・採番・ハッシュ化）は当初 `shared/services/` に置いていたが、
+`shared/domain/` に移した。理由は 2 つ。
+
+1. **3 つとも `contexts/<ctx>/domain/` から使われている。** 時刻と採番は集約の生成に、
+   ハッシュ照合は `verifyUserPassword` に要る。ドメインが要求するものを
+   ドメインの外に置いていたことになる。
+2. **`services` が層でもトピックでもない名前だった。** これを畳むと `shared/` の直下は
+   層の名前 4 つ（domain / application / infrastructure / presentation）と
+   トピック 2 つ（errors / db）だけになる。
+
+`shared/domain/services/` にしなかったのは、`services` が 2 つの意味を持ってしまうから。
+コンテキスト側の `domain/services/` は**集約をまたぐ業務ルール**の置き場で、技術ポートとは
+別物。そしてその枠は、`auth` が来て「コンテキストをまたぐ業務ルール」が現れたときのために
+空けておきたい。
+
+> 以前は逆の判断をしていた（「共有カーネルは Schema だけに依存する純粋な語彙で揃える」）。
+> 覆した理由は、`contexts/<ctx>/domain/` が最初から語彙（`model/`）と
+> R を持つポート（`user-repository.ts`）を同居させており、**その混在こそが既定の形**
+> だったから。「純粋な語彙だけ」は原則ではなく、当時の中身の説明にすぎなかった。
+
+### `model/` の中は brand の有無で分ける
+
+| 中身                       | 見分け方                     | 置き場                 | 例                         |
+| -------------------------- | ---------------------------- | ---------------------- | -------------------------- |
+| **語彙**（値オブジェクト） | `Schema.brand` を持つ        | `model/value-objects/` | `MailAddress` / `Password` |
+| **形式**（語彙の素材）     | Schema だが brand を持たない | `model/` 直下          | `Uuid`                     |
+
+`Uuid` は **refinement（制約）だけを持ち、brand を持たない**スキーマなので、
+`value-objects/` には入れていない。
+
+```ts
+Uuid        = Schema.String.pipe(Schema.pattern(...));                    // 制約のみ
+MailAddress = Schema.String.pipe(Schema.pattern(...), Schema.brand(...)); // 制約 + 名目型
+```
+
+**制約は「この文字列がどういう形か」を言い、brand は「これが何者か」を言う。**
+`Uuid` は形しか言っていないので、単体では何の id かを意味しない。`UserId` と
+`OrderId` は同じ形の別物で、その「別物」を作っているのは brand のほう
+（`UserId = Uuid.pipe(Schema.brand("User.Id"))`）。
+
+`Uuid` 自身に brand を付けないのはそのため。付けると brand の二重掛けになり、
+かつ素の `Uuid` が id を期待する場所へ流れ込めてしまう。
+
+形式が 1 つしかないうちはディレクトリを切らない。上の 2 つを見れば分類できるので、
+ディレクトリに分類を語らせる必要がないため。2 つ目の「brand を持たないスキーマ」が
+現れたら、そのとき `formats/` なりを切る。
 
 ---
 

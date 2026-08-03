@@ -1,6 +1,6 @@
 import { Effect, Layer } from "effect";
 
-import { PasswordHasher } from "~/shared/services/password-hasher";
+import { PasswordHasher } from "~/shared/domain/password-hasher";
 
 /**
  * 本番実装: Bun ネイティブの argon2id (Bun.password の既定アルゴリズム) を使う。

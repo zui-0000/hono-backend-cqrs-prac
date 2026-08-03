@@ -1,7 +1,7 @@
 import { Cause, Effect } from "effect";
 import type { Context } from "hono";
 
-import { UuidGenerator } from "~/shared/services/uuid-generator";
+import { UuidGenerator } from "~/shared/domain/uuid-generator";
 
 import { HttpHeader } from "./constants/http-header";
 import { HttpStatus } from "./constants/http-status";

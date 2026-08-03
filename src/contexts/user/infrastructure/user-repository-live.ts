@@ -8,7 +8,7 @@ import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { db } from "~/shared/db/client";
 import { isSqlStateViolation, SqlState } from "~/shared/db/error";
-import { MailAddress } from "~/shared/domain/value-objects/mail-address";
+import { MailAddress } from "~/shared/domain/model/value-objects/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
 import { RepositoryError } from "~/shared/errors/repository-error";
 

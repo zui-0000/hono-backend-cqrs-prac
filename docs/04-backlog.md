@@ -145,7 +145,7 @@
 
 ### `shared/db/` を層で切り直さないこと
 
-`shared/` は層で切れている（`domain/` / `services/` / `infrastructure/` / `presentation/`）のに、
+`shared/` は層で切れている（`domain/` / `application/` / `infrastructure/` / `presentation/`）のに、
 `db/` だけがトピック切りで混じっている。不揃いに見えるが、**意図してこの形にしている**。
 
 `shared/db/` の中身は寿命が 3 種類に分かれる。

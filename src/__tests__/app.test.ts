@@ -11,12 +11,12 @@ import { UserHashedPassword } from "~/contexts/user/domain/model/value-objects/u
 import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
 import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
-import { MailAddress } from "~/shared/domain/value-objects/mail-address";
+import { MailAddress } from "~/shared/domain/model/value-objects/mail-address";
+import { PasswordHasher } from "~/shared/domain/password-hasher";
+import { UuidGenerator } from "~/shared/domain/uuid-generator";
 import { ErrorCode } from "~/shared/presentation/constants/error-code";
 import { HttpHeader } from "~/shared/presentation/constants/http-header";
 import { HttpStatus } from "~/shared/presentation/constants/http-status";
-import { PasswordHasher } from "~/shared/services/password-hasher";
-import { UuidGenerator } from "~/shared/services/uuid-generator";
 
 /**
  * HTTP 境界の統合テスト (DB・実サービスなし)。

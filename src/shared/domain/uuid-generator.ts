@@ -27,13 +27,10 @@ export const UuidGenerator = Context.GenericTag<UuidGenerator>("UuidGenerator");
  *
  * ポート (Tag) と同じファイルに置いているのは、R に UuidGenerator が現れる
  * 型シグネチャどおり、この関数がポート無しには存在できないため。
- * services/ は「アプリが環境に要求する能力とその使用側の道具」を集める場所で、
- * ポート専用ではない (clock.ts の now も道具側)。
  *
- * shared/domain/uuid.ts (Uuid スキーマ) に寄せる案も採らなかった。
- * 共有カーネルの 3 ファイルは Schema だけに依存する純粋な語彙で揃えてあり、
- * R を持つ関数を入れるとその性格が崩れるため。
- * 「uuidv7 という形式」は domain、「採番する能力」はここ、と責務で分けている。
+ * model/uuid.ts (Uuid スキーマ) に統合はしない。あちらは「uuidv7 という形式」で
+ * ドメインが語る対象、こちらは「採番する能力」でドメインが環境から得るもの。
+ * その違いがそのまま model/ の中と外という配置になっている。
  */
 export const generateBrandedUuid = <A extends string>(
   schema: Schema.Schema<A, string>,

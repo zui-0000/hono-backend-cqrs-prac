@@ -144,7 +144,7 @@
     },
     {
       // shared は contexts を知らない。合成ルート (src/app-runtime.ts) だけが実装を知る。
-      // 横断サービスもポート (services/) と実装 (infrastructure/) を分けてあるため、
+      // 横断サービスもポート (domain/) と実装 (infrastructure/) を分けてあるため、
       // shared の中でもポート側から実装側は掴まない。
       "files": ["src/shared/**"],
       "rules": {

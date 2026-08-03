@@ -1,6 +1,6 @@
 import { Effect, Layer } from "effect";
 
-import { UuidGenerator } from "~/shared/services/uuid-generator";
+import { UuidGenerator } from "~/shared/domain/uuid-generator";
 
 /**
  * 本番実装: Bun ネイティブの uuidv7 を採番する。

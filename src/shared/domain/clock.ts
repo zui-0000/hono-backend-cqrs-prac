@@ -17,10 +17,17 @@ import { Clock, Effect } from "effect";
  * (別案として「時刻は引数で受け取り、ドメインは時計を知らない」形もあるが、
  * 集約ごとに呼び出し側が timestamp を用意する手間を嫌って採らなかった)。
  *
- * services/ に置く理由: ここは「アプリが環境に要求する能力」(時刻・採番・
- * ハッシュ化) とその使用側の道具を集める場所で、ポート (Tag) 専用ではない
- * (uuid-generator.ts の generateBrandedUuid も同じく道具側)。
- * 時刻はまさに環境から得る能力であり、宣言を Effect が既に持っているだけ。
+ * domain/ 直下に置く理由: 語彙を model/ に集めたうえで、
+ * 直下には「ドメインが環境から得るもの」だけを残す形にしているため。
+ * contexts/<ctx>/domain/ が model/ と services/ を切って
+ * user-repository.ts を直下に置いているのと同じ並びになる。
+ *
+ * このファイルだけは Tag を宣言していない (上記のとおり Clock は Effect が持つ) が、
+ * 「環境から得るもの」という位置づけは採番・ハッシュ化と変わらないので隣に置く。
+ * 宣言の有無は「どうやって」の話で、分類の軸にはしない。
+ *
+ * 以前は shared/services/ に置いていたが、あれは層でもトピックでもない名前のうえ、
+ * ドメインが要求するものを domain の外に置く形になっていた。
  */
 export const now: Effect.Effect<Date> = Effect.map(
   Clock.currentTimeMillis,

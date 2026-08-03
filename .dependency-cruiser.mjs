@@ -22,7 +22,7 @@ const INTERNAL_LAYERS = "(infrastructure|presentation)";
 /**
  * 実装 (アダプタ) の置き場。contexts と shared を同じ扱いにする。
  *
- * 横断サービス (採番・ハッシュ化) も、ポートは shared/services に、
+ * 横断サービス (採番・ハッシュ化) も、ポートは shared/domain に、
  * 実装は shared/infrastructure に分けて置く。同じファイルに同居させると
  * ポートを import しただけで実装の依存まで引きずり込むうえ、
  * ここのルールはモジュール単位で判定するため検出もできない。
@@ -37,7 +37,7 @@ const IMPL_LAYER = "^src/(contexts/[^/]+|shared)/infrastructure/";
  */
 const PORT_SIDE =
   "^src/(contexts/[^/]+/(domain|application|presentation)" +
-  "|shared/(domain|application|services|errors|presentation))/";
+  "|shared/(domain|application|errors|presentation))/";
 
 /** 違反メッセージを 3 部構成に揃えるためのヘルパー。 */
 const message = ({ violation, reason, fix }) =>

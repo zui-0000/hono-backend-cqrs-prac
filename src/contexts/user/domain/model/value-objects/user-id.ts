@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
-import { Uuid } from "~/shared/domain/uuid";
-import { generateBrandedUuid } from "~/shared/services/uuid-generator";
+import { Uuid } from "~/shared/domain/model/uuid";
+import { generateBrandedUuid } from "~/shared/domain/uuid-generator";
 
 /**
  * ユーザーの識別子 (値オブジェクト / branded uuidv7)。形式検証は共有ドメインの Uuid。

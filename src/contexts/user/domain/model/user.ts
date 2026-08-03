@@ -1,11 +1,11 @@
 import { Effect, Schema } from "effect";
 
-import { MailAddress } from "~/shared/domain/value-objects/mail-address";
-import type { Password } from "~/shared/domain/value-objects/password";
+import { now } from "~/shared/domain/clock";
+import { MailAddress } from "~/shared/domain/model/value-objects/mail-address";
+import type { Password } from "~/shared/domain/model/value-objects/password";
+import { PasswordHasher } from "~/shared/domain/password-hasher";
+import type { UuidGenerator } from "~/shared/domain/uuid-generator";
 import { UnauthorizedError } from "~/shared/errors/unauthorized-error";
-import { now } from "~/shared/services/clock";
-import { PasswordHasher } from "~/shared/services/password-hasher";
-import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import { UserHashedPassword } from "./value-objects/user-hashed-password";
 import { generateUserId, UserId } from "./value-objects/user-id";
@@ -87,7 +87,7 @@ export const changeUserProfile = (
  * 「パスワード変更のとき現在のパスワードを確認するか」はビジネス側に聞ける問い
  * (確認せず再ログインを求める製品もある) なので、業務ルールとして内側に置く。
  *
- * ハッシュ照合という副作用が要るが、依存するのは shared/services のポートだけで
+ * ハッシュ照合という副作用が要るが、依存するのは shared/domain のポートだけで
  * 実装 (Bun.password) は知らない。createUser が UuidGenerator を、
  * changeUserProfile が Clock を要求するのと同じ形で R に現れる。
  */
