@@ -61,6 +61,6 @@ export const updateUserCommand = (
       mailAddress: input.mailAddress,
     });
 
-    // 4. リポジトリへ永続化
-    yield* userRepository.update(updated);
+    // 4. リポジトリへ永続化 (書き換わるのは name / mailAddress と updatedAt だけ)
+    yield* userRepository.updateProfile(updated);
   });

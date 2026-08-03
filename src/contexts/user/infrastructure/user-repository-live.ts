@@ -97,18 +97,32 @@ export const UserRepositoryLive = Layer.succeed(UserRepository, {
       }),
     ),
 
-  update: (user) =>
+  // set に並べるのは「その遷移が変える項目」だけ。触らない列を書き戻さないことが
+  // 分けた理由そのものなので、ここに項目を足すときはポートの doc を読むこと。
+  updateProfile: (user) =>
     write(user, () =>
       db
         .update(tUser)
         .set({
           name: user.name,
           mailAddress: user.mailAddress,
-          hashedPassword: user.hashedPassword,
           updatedAt: user.updatedAt,
         })
         .where(eq(tUser.id, user.id)),
     ),
+
+  // メールアドレスを書かないので一意制約違反は起こりえない。
+  // よって write (409 への翻訳) ではなく query を使う。
+  updatePassword: (user) =>
+    query(() =>
+      db
+        .update(tUser)
+        .set({
+          hashedPassword: user.hashedPassword,
+          updatedAt: user.updatedAt,
+        })
+        .where(eq(tUser.id, user.id)),
+    ).pipe(Effect.asVoid),
 
   findById: (id) =>
     query(() => db.select().from(tUser).where(eq(tUser.id, id)).limit(1)).pipe(

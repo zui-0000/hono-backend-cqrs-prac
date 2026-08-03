@@ -76,7 +76,8 @@ const makeRuntime = (
     Layer.mergeAll(
       Layer.succeed(UserRepository, {
         create: () => Effect.void,
-        update: () => Effect.void,
+        updateProfile: () => Effect.void,
+        updatePassword: () => Effect.void,
         findById: () => Effect.succeed(Option.none()),
         findByMailAddress: () => Effect.succeed(Option.none()),
         deleteById: () => Effect.void,
@@ -276,7 +277,7 @@ describe("PUT /users/:id", () => {
     const runtime = makeRuntime({
       userRepository: {
         findById: () => Effect.succeed(Option.some(existing)),
-        update: (user) =>
+        updateProfile: (user) =>
           Effect.sync(() => {
             updated.push(user);
           }),
@@ -379,7 +380,7 @@ describe("PUT /users/:id/password", () => {
     const runtime = makeRuntime({
       userRepository: {
         findById: () => Effect.succeed(Option.some(existing)),
-        update: (user) =>
+        updatePassword: (user) =>
           Effect.sync(() => {
             updated.push(user);
           }),
@@ -422,7 +423,7 @@ describe("PUT /users/:id/password", () => {
     const runtime = makeRuntime({
       userRepository: {
         findById: () => Effect.succeed(Option.some(makeUser())),
-        update: (user) =>
+        updatePassword: (user) =>
           Effect.sync(() => {
             updated.push(user);
           }),

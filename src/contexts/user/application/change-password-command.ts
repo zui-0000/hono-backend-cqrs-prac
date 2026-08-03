@@ -68,9 +68,6 @@ export const changePasswordCommand = (
     // 4. 集約の状態遷移 (元の user は書き換わらない)
     const updated = yield* changeUserPassword(user, hashedPassword);
 
-    // 5. 永続化。メールアドレスを変えないこの経路で一意制約違反は起こりえないため、
-    //    起きたなら実装の破綻として defect にする (契約にも 409 は無い)。
-    yield* userRepository
-      .update(updated)
-      .pipe(Effect.catchTag("MailAddressAlreadyExistsError", Effect.die));
+    // 5. 永続化 (書き換わるのは hashedPassword と updatedAt だけ)
+    yield* userRepository.updatePassword(updated);
   });
