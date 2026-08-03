@@ -19,6 +19,37 @@ PostgreSQL のバージョン選定と Drizzle / `bun-sql` を選んだ理由は
 
 ---
 
+## 更新確認が「何も無い」と言うとき
+
+`pnpm check:updates` が沈黙しても、**更新が無いとは限らない**。
+
+pnpm は v11 から [`minimumReleaseAge`](https://pnpm.io/settings/dependency-resolution)
+の既定値が **1440 分（24 時間）** で、公開から 24 時間経っていないバージョンを
+無視する。侵害されたパッケージを掴まないためのサプライチェーン対策で、
+悪意ある公開の多くは 1 時間以内にレジストリから消えることを前提にしている。
+
+つまり `pnpm outdated` の沈黙は「更新が無い」ではなく
+**「いま入れられるものは無い」**という意味。実際にこれで一度混乱したので、
+2 本に分けてある。
+
+| コマンド                     | 見えるもの                                          |
+| ---------------------------- | --------------------------------------------------- |
+| `pnpm check:updates`         | いま入れられる更新（pnpm が実際に入れるものと一致） |
+| `pnpm check:updates:pending` | 検疫中（24 時間以内の公開）を含む、存在する全部     |
+
+`npm outdated` や `npx npm-check-updates` は検疫を知らないため、
+`check:updates:pending` と同じものを出す。**それらが出す版に
+`package.json` を書き換えても、24 時間経つまで `pnpm install` は入れない**
+（急ぐ場合は `minimumReleaseAgeExclude` で個別に除外する）。
+
+`minimumReleaseAge` を 0 にする案は採らない。最新に追従したい動機と、
+公開直後の攻撃を最速で踏む危険は裏表なので、既定の 24 時間はそのまま活かす。
+
+なお `--recursive` は付けない。ワークスペースではないため効果が無く、
+`-r` は既定でワークスペースルートを除外するので誤解のもとになる。
+
+---
+
 ## Effect（Effect-TS）
 
 ドメインからプレゼンテーションまで [Effect](https://effect.website/) を全面採用し、
