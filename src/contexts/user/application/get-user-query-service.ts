@@ -2,7 +2,18 @@ import { Context, type Effect, type Option } from "effect";
 
 import type { RepositoryError } from "~/shared/errors/repository-error";
 
-import type { GetUserQueryOutput } from "./dto";
+/**
+ * getUser クエリの結果。ドメインの User 集約ではなく読み取り専用の射影で、
+ * 必要になった項目だけを持たせる (集約の全項目を写さない)。
+ *
+ * 「UserDto」のような集約名ベースではなくユースケース名で命名するのは、
+ * 一覧取得を足したときに別の射影が必要になるため
+ * (どちらも「ユーザーの DTO」なので集約名では区別できない)。
+ */
+export type GetUserQueryOutput = {
+  readonly name: string;
+  readonly mailAddress: string;
+};
 
 /**
  * ユーザー取得クエリのポート (読み取り側 / CQRS のクエリ経路)。

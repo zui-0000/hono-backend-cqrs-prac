@@ -170,6 +170,36 @@
       },
     },
     {
+      // shared/application はユースケースの共通部品を置く層 (例: orNotFound)。
+      // contexts の application と同じく presentation を知ってはいけないが、
+      // src/shared/** の override は presentation を禁じていない
+      // (shared/presentation 自身がそこに含まれるため)。
+      // overrides は後勝ちで丸ごと置換されるので、src/shared/** より後ろに置いて
+      // 必要な group をすべて書き直す。
+      "files": ["src/shared/application/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["~/contexts/**", "**/contexts/**"],
+                "message": "shared から contexts への依存は逆方向です。共有基盤は個別コンテキストを知りません。",
+              },
+              {
+                "group": ["**/infrastructure/**", "**/presentation/**"],
+                "message": "application は実装や HTTP を知りません。ポート (Context.Tag) 越しに使い、実装の結線は src/app-runtime.ts が行います。",
+              },
+              {
+                "group": ["~/generated/**", "**/generated/**"],
+                "message": "生成スキーマ (API 契約) を使ってよいのは presentation 層だけです。",
+              },
+            ],
+          },
+        ],
+      },
+    },
+    {
       // shared/infrastructure は横断サービスの本番実装 (Bun 依存など) を置く層。
       // 自分が実装なので上の infrastructure 禁止からは外れる必要があり、
       // かつ overrides は後勝ちで丸ごと置換されるため、

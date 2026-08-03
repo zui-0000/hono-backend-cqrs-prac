@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect";
 
+import { MailAddress } from "~/shared/domain/value-objects/mail-address";
+import { Password } from "~/shared/domain/value-objects/password";
 import type { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/errors/repository-error";
 import { PasswordHasher } from "~/shared/services/password-hasher";
@@ -7,9 +9,30 @@ import type { UuidGenerator } from "~/shared/services/uuid-generator";
 
 import { createUser } from "../domain/model/user";
 import { UserHashedPassword } from "../domain/model/value-objects/user-hashed-password";
+import type { UserId } from "../domain/model/value-objects/user-id";
+import { UserName } from "../domain/model/value-objects/user-name";
 import { checkMailAddressDuplication } from "../domain/services/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
-import type { CreateUserCommandInput, CreateUserCommandOutput } from "./dto";
+
+/** ユーザー新規作成の入力。 */
+export const CreateUserCommandInput = Schema.Struct({
+  name: UserName,
+  mailAddress: MailAddress,
+  password: Password,
+});
+export type CreateUserCommandInput = typeof CreateUserCommandInput.Type;
+
+/**
+ * ユーザー新規作成の結果。採番された id。
+ *
+ * CQRS では「コマンドは値を返さない」のが原則だが、採番した識別子は例外として返す。
+ * id はサーバー側でしか決まらず、返さないとクライアントは作ったリソースを
+ * 二度と参照できない (GET /users/{id} を呼べない)。集約そのものは外に出さない。
+ *
+ * 応答ボディの `{ id: ... }` というラップは契約側の形なので、ここでは id そのものを表す。
+ * 詰め替えるのは presentation の責務。
+ */
+export type CreateUserCommandOutput = UserId;
 
 /**
  * ユーザーを新規作成する (CQRS のコマンド)。
@@ -21,7 +44,7 @@ import type { CreateUserCommandInput, CreateUserCommandOutput } from "./dto";
  *
  * 失敗 (E) と依存 (R) がすべて型に現れる = throw を使わない。
  *
- * 返すのは採番された id だけ (理由は dto.ts の CreateUserCommandOutput を参照)。
+ * 返すのは採番された id だけ (理由は上の CreateUserCommandOutput を参照)。
  */
 export const createUserCommand = (
   input: CreateUserCommandInput,

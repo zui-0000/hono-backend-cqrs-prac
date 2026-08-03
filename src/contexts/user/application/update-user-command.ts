@@ -1,13 +1,28 @@
-import { Effect, Option } from "effect";
+import { Effect, Schema } from "effect";
 
+import { orNotFound } from "~/shared/application/or-not-found";
+import { MailAddress } from "~/shared/domain/value-objects/mail-address";
 import type { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
 import type { RepositoryError } from "~/shared/errors/repository-error";
-import { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
+import type { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
 
 import { changeUserProfile } from "../domain/model/user";
+import { UserId } from "../domain/model/value-objects/user-id";
+import { UserName } from "../domain/model/value-objects/user-name";
 import { checkMailAddressDuplication } from "../domain/services/check-mail-address-duplication";
 import { UserRepository } from "../domain/user-repository";
-import type { UpdateUserCommandInput } from "./dto";
+
+/**
+ * ユーザー更新の入力。
+ * id はパスパラメータ、それ以外はボディ由来だが、ユースケースから見れば
+ * 入力は 1 つなので合成した形で定義する (組み立ては presentation 層の責務)。
+ */
+export const UpdateUserCommandInput = Schema.Struct({
+  id: UserId,
+  name: UserName,
+  mailAddress: MailAddress,
+});
+export type UpdateUserCommandInput = typeof UpdateUserCommandInput.Type;
 
 /**
  * ユーザーのプロフィールを更新する (CQRS のコマンド)。
@@ -32,14 +47,7 @@ export const updateUserCommand = (
     const userRepository = yield* UserRepository;
 
     // 1. 対象の集約を復元 (存在しなければ 404)
-    const user = yield* userRepository.findById(input.id).pipe(
-      Effect.flatMap(
-        Option.match({
-          onNone: () => new ResourceNotFoundError(),
-          onSome: Effect.succeed,
-        }),
-      ),
-    );
+    const user = yield* userRepository.findById(input.id).pipe(orNotFound);
 
     // 2. メールアドレスの重複チェック。
     //    自分自身を除外しないと「メールアドレスを変えない更新」が 409 になる。

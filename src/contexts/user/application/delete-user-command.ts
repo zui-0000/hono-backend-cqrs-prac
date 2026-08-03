@@ -1,10 +1,21 @@
-import { Effect, Option } from "effect";
+import { Effect, Schema } from "effect";
 
+import { orNotFound } from "~/shared/application/or-not-found";
 import type { RepositoryError } from "~/shared/errors/repository-error";
-import { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
+import type { ResourceNotFoundError } from "~/shared/errors/resource-not-found-error";
 
+import { UserId } from "../domain/model/value-objects/user-id";
 import { UserRepository } from "../domain/user-repository";
-import type { DeleteUserCommandInput } from "./dto";
+
+/**
+ * ユーザー削除の入力。項目が id だけでも Struct で定義するのは、
+ * 生成スキーマの UserId (API 契約の brand) をドメインの UserId へ
+ * 変換する経路を、他のコマンドと同じ形に揃えるため。
+ */
+export const DeleteUserCommandInput = Schema.Struct({
+  id: UserId,
+});
+export type DeleteUserCommandInput = typeof DeleteUserCommandInput.Type;
 
 /**
  * ユーザーを削除する (CQRS のコマンド)。
@@ -30,15 +41,8 @@ export const deleteUserCommand = (
   Effect.gen(function* () {
     const userRepository = yield* UserRepository;
 
-    // 1. 存在確認
-    yield* userRepository.findById(input.id).pipe(
-      Effect.flatMap(
-        Option.match({
-          onNone: () => new ResourceNotFoundError(),
-          onSome: () => Effect.void,
-        }),
-      ),
-    );
+    // 1. 存在確認 (復元した集約は使わず、居ることだけを確かめる)
+    yield* userRepository.findById(input.id).pipe(orNotFound);
 
     // 2. 削除
     yield* userRepository.deleteById(input.id);

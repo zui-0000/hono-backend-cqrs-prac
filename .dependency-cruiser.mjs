@@ -31,12 +31,13 @@ const IMPL_LAYER = "^src/(contexts/[^/]+|shared)/infrastructure/";
 
 /**
  * 実装を知ってはいけない側。
- * contexts の内側 3 層に加え、shared のうちポート・型・HTTP 基盤を置く層も含む。
+ * contexts の内側 3 層に加え、shared のうちポート・型・共通部品・HTTP 基盤を
+ * 置く層も含む (shared は infrastructure と db 以外すべて)。
  * 実装を結線してよいのは合成ルート (src/app-runtime.ts) と各 *-layer.ts だけ。
  */
 const PORT_SIDE =
   "^src/(contexts/[^/]+/(domain|application|presentation)" +
-  "|shared/(domain|services|errors|presentation))/";
+  "|shared/(domain|application|services|errors|presentation))/";
 
 /** 違反メッセージを 3 部構成に揃えるためのヘルパー。 */
 const message = ({ violation, reason, fix }) =>
@@ -81,7 +82,7 @@ export default {
       to: {
         path:
           "^src/(contexts/[^/]+/(application|infrastructure|presentation)" +
-          "|shared/(infrastructure|presentation))/",
+          "|shared/(application|infrastructure|presentation))/",
       },
     },
     {
@@ -98,11 +99,11 @@ export default {
           "ポート (domain/ の Repository や application/ の QueryService) 越しに使います。\n" +
           "どの実装を使うかを決めるのは合成ルート (src/app-runtime.ts) だけです。",
       }),
-      from: { path: "^src/contexts/[^/]+/application/" },
+      from: { path: "^src/(contexts/[^/]+|shared)/application/" },
       to: {
         path:
           "^src/(contexts/[^/]+/(infrastructure|presentation)" +
-          "|shared/infrastructure)/",
+          "|shared/(infrastructure|presentation))/",
       },
     },
     {

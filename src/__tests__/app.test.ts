@@ -4,7 +4,7 @@ import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
 
 import { createApp } from "~/app";
 import type { AppRuntime } from "~/app-runtime";
-import type { GetUserQueryOutput } from "~/contexts/user/application/dto";
+import type { GetUserQueryOutput } from "~/contexts/user/application/get-user-query-service";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { User } from "~/contexts/user/domain/model/user";
 import { UserHashedPassword } from "~/contexts/user/domain/model/value-objects/user-hashed-password";

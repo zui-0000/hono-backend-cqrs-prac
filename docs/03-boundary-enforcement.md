@@ -21,21 +21,25 @@ oxlint は import 文の文字列しか見ないため、相対パスと `~/` �
 `infrastructure` 列は `contexts/<ctx>/infrastructure/` と `shared/infrastructure/` の両方を指す
 （どちらも「実装」なので同じ扱い）。
 
-| 参照元 →                                        | domain | application | infrastructure | presentation | `shared/db` | `generated` |
-| ----------------------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
-| **domain**                                      |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **application**                                 |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **infrastructure**                              |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
-| **presentation**                                |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
-| **shared のポート側**（domain/services/errors） |   ✗    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
-| **`<ctx>-layer.ts`**（提供側）                  |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
-| **`src/app-runtime.ts`**（合成ルート）          |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
+| 参照元 →                                                    | domain | application | infrastructure | presentation | `shared/db` | `generated` |
+| ----------------------------------------------------------- | :----: | :---------: | :------------: | :----------: | :---------: | :---------: |
+| **domain**                                                  |   —    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **application**                                             |   ✓    |      —      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **infrastructure**                                          |   ✓    |      ✓      |       —        |      ✗       |      ✓      |      ✗      |
+| **presentation**                                            |   ✓    |      ✓      |       ✗        |      —       |      ✗      |      ✓      |
+| **shared のポート側**（domain/application/services/errors） |   ✗    |      ✗      |       ✗        |      ✗       |      ✗      |      ✗      |
+| **`<ctx>-layer.ts`**（提供側）                              |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
+| **`src/app-runtime.ts`**（合成ルート）                      |   ✓    |      ✓      |       ✓        |      ✓       |      ✓      |      ✗      |
 
 - `generated`（API 契約の生成コード）に触れるのは **presentation だけ**。
   契約の型が内側へ漏れると、契約を変えるたびにドメインまで書き換えが波及する。
 - `shared/db`（Drizzle）に触れるのは **infrastructure だけ**。
 - **実装（`Layer`）を知ってよいのは合成側だけ。** それ以外はポート（`Context.Tag`）越しに使う。
   合成側とは `<ctx>-layer.ts` と `src/app-runtime.ts` の 2 つ。
+- **shared の中でも層の向きは同じ。** `shared/domain` → `shared/application` も、
+  `shared/application` → `shared/presentation` も禁止する
+  （`domain-not-to-outer` と `application-not-to-impl` の `from` / `to` が
+  contexts と shared の両方を拾うように書いてある）。
 
 ### shared でもポートと実装を分ける
 

@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { deleteUserCommand } from "~/contexts/user/application/delete-user-command";
-import { DeleteUserCommandInput } from "~/contexts/user/application/dto";
+import {
+  deleteUserCommand,
+  DeleteUserCommandInput,
+} from "~/contexts/user/application/delete-user-command";
 import type { DeleteUserParams } from "~/generated/users";
 import { decodeInput } from "~/shared/presentation/request-validator";
 

@@ -1,7 +1,9 @@
 import { Effect } from "effect";
 
-import { createUserCommand } from "~/contexts/user/application/create-user-command";
-import { CreateUserCommandInput } from "~/contexts/user/application/dto";
+import {
+  createUserCommand,
+  CreateUserCommandInput,
+} from "~/contexts/user/application/create-user-command";
 import type { CreateUserBody } from "~/generated/users";
 import { decodeInput } from "~/shared/presentation/request-validator";
 

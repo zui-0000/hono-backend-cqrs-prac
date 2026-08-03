@@ -84,22 +84,6 @@
 
 ## 先送りした判断
 
-### 存在確認（`findById` → 404）の抽出
-
-`new ResourceNotFoundError()` は現在 3 箇所。
-
-```
-application/update-user-command.ts    findById → Option.match
-application/delete-user-command.ts    findById → Option.match
-presentation/get-user-controller.ts   GetUserQueryService → Option.match  ← 経路が違う
-```
-
-前者 2 つは同じ形なので `findUserOrFail` として抽出できる。一度実装したが、
-**2 箇所では抽出の根拠が弱い**（重複チェックと違い実装が完全に同一で、
-取り違えの危険が無い）ため戻した。`changePassword` が 3 箇所目になった時点で再判断する。
-
-なお 3 つ目（controller 側）は Query 経路なので、同じ関数では吸収できない。
-
 ### `process.env.DATABASE_URL!` の起動時検証
 
 3 箇所（`shared/db/client.ts` / `drizzle.config.ts` / `scripts/migrate.ts`）で

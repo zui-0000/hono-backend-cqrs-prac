@@ -24,6 +24,7 @@ src/
 ├─ shared/
 │  ├─ domain/           # 共有カーネル。uuid.ts（brand なしの形式スキーマ）と
 │  │                    #   value-objects/（MailAddress / Password）に分ける
+│  ├─ application/      # ユースケースの共通部品（orNotFound）。層で切った並びの一員
 │  ├─ errors/           # 型付きエラー（Data.TaggedError）
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  │  └─ constants/     #   API が外に見せる語彙。公開するのが `as const` の表と
@@ -91,8 +92,10 @@ User / UserId / UserName / UserHashedPassword / createUser / changeUserProfile;
 
 修飾しないと、コンテキストが増えたとき `Id` や `Model` が衝突して別名 import 地獄になる。
 
-**ファイル名はエクスポート名に対応させる**（`value-objects/user-id.ts` → `UserId`）。
-複数の定義を持つカテゴリファイル（`dto.ts` など）は例外。
+**ファイル名は主となるエクスポート名に対応させる**（`value-objects/user-id.ts` → `UserId`）。
+同じユースケースに属する型は同じファイルに同居してよい
+（`create-user-command.ts` → `createUserCommand` / `CreateUserCommandInput` /
+`CreateUserCommandOutput`）。名前に接頭辞が付いているので、どれがどのファイルかは名前で読める。
 
 ### ただしタグ文字列は一致させなくてよい
 
@@ -157,6 +160,32 @@ glob を取れるため、ファイルを分けても migration は 1 系列で�
 
 ---
 
+## ユースケースの入出力は、そのコマンド／クエリと同じファイルに置く
+
+`application/` は **1 ファイル = 1 ユースケース**。入出力の型を集めた `dto.ts` を
+一度は置いたが、畳んでそれぞれのコマンド／クエリへ展開した。
+
+理由は、`dto.ts` が**この層で唯一の例外**だったから。ユースケースが増えるほど
+「入力を直すのに 2 ファイル開く」が積み上がり、逆に `dto.ts` を開いても
+どのユースケースの話かは名前でしか分からない。
+凝集の単位はユースケースであって「DTO であること」ではない。
+
+副産物として `application/` に補助的なファイルを置く言い訳が消えた。
+共通部品（`orNotFound`）を `shared/application/` に出したのはこの規則を保つため。
+
+入力と出力で作りが異なる点は変わらない。
+
+- **入力**は Effect Schema で定義する。値オブジェクトのスキーマを組み合わせるため、
+  presentation は生の入力を一度 `decodeInput` するだけで検証済みの値を得られる
+  （フィールドごとの詰め替えが要らない）。
+- **出力**はプレーンな型で定義する。既に検証済みの値を返すだけで decode は不要だし、
+  応答が契約を満たすかは presentation 層が生成スキーマで検証するので二重に検証しない。
+
+応答ボディの「形」（`{ id: ... }` のようなラップ）は契約側の関心なので持ち込まない。
+presentation が契約の形へ詰め替える。
+
+---
+
 ## ドメインサービス（`domain/services/`）
 
 **集約をまたぐ業務ルール**を置く。集約 1 つを見ても判断できない不変条件は、
@@ -174,6 +203,13 @@ glob を取れるため、ファイルを分けても migration は 1 系列で�
 「対象が居なければ 404」のような**ユースケースごとの方針**は command に残す。
 これは業務ルールではない — ビジネス側に「同じメアドの人が 2 人居ていいですか？」は聞けるが、
 「存在しない ID を指定されたらどうしますか？」は業務の問いではない。
+
+この「Option を 404 に変える」は 3 箇所（`updateUser` / `deleteUser` / `getUser`）に
+現れたため `shared/application/or-not-found.ts` に切り出した。
+`findUserOrFail`（リポジトリを内側に持つ形）にしなかったのは、それだと
+コマンド経路しか吸収できず、同じ形の判断をしている `getUserController`（Query 経路）が
+残ってしまうから。変換だけを切り出せば経路を問わず使え、
+結果として user コンテキスト固有でもなくなる。
 
 ### 命名: `check<対象>Duplication`
 
