@@ -106,3 +106,9 @@ pnpm lint:fix
   （oxlint と dependency-cruiser の役割分担、層ごとの可否表、踏んだ落とし穴）
 - [`docs/04-backlog.md`](docs/04-backlog.md) — 積み残し
   （テスト着手時に固定すべき挙動、未実装のユースケース、先送りした判断とその理由）
+- [`docs/05-auth/`](docs/05-auth/) — 認証（ここだけディレクトリを切っている）
+  - [`00-authentication-methods.md`](docs/05-auth/00-authentication-methods.md) — **方式そのものの解説**。
+    セッションと JWT、券の運び方、二段構えの理由、踏みやすい落とし穴。
+    このリポジトリの決定ではなく一般的な知識なので、他の doc とは性質が違う
+  - [`01-our-approach.md`](docs/05-auth/01-our-approach.md) — **このリポジトリの決定**。
+    契約が既に決めていること、そこから導かれる設計、まだ決めていないことと決める引き金
