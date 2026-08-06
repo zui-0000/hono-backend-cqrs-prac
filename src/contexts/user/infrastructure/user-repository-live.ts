@@ -7,7 +7,11 @@ import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
 import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
 import { db } from "~/shared/db/client";
-import { isSqlStateViolation, SqlState } from "~/shared/db/error";
+import {
+  classifyDbFailure,
+  isSqlStateViolation,
+  SqlState,
+} from "~/shared/db/error";
 import { MailAddress } from "~/shared/domain/model/value-objects/mail-address";
 import { MailAddressAlreadyExistsError } from "~/shared/errors/mail-address-already-exists-error";
 import { RepositoryError } from "~/shared/errors/repository-error";
@@ -33,13 +37,17 @@ const toDomain = (row: typeof tUser.$inferSelect): Effect.Effect<User> =>
     };
   }).pipe(Effect.orDie);
 
-/** DB 操作を Effect に包み、例外を RepositoryError (型付きエラー) に翻訳する。 */
+/**
+ * DB 操作を Effect に包み、例外を RepositoryError (型付きエラー) に翻訳する。
+ * 内訳 (failure / sqlState) は classifyDbFailure が埋める。外には出さずログにだけ残る。
+ */
 const query = <A>(
   operation: () => Promise<A>,
 ): Effect.Effect<A, RepositoryError> =>
   Effect.tryPromise({
     try: operation,
-    catch: (cause) => new RepositoryError({ cause }),
+    catch: (cause) =>
+      new RepositoryError({ ...classifyDbFailure(cause), cause }),
   });
 
 // t_user のメールアドレス一意制約 (migration が生成した制約名)。
@@ -65,7 +73,7 @@ const write = (
         MAIL_ADDRESS_UNIQUE_CONSTRAINT,
       )
         ? new MailAddressAlreadyExistsError({ mailAddress: user.mailAddress })
-        : new RepositoryError({ cause }),
+        : new RepositoryError({ ...classifyDbFailure(cause), cause }),
   }).pipe(Effect.asVoid);
 
 /**

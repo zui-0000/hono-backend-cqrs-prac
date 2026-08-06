@@ -183,6 +183,78 @@ DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose st
 
 ---
 
+## DB のエラーをどう扱うか
+
+DB 由来の失敗は**性質の違う 2 種類**に分かれる。混ぜないことが要点。
+
+|                         | 何が起きた                             | 扱い                             |
+| ----------------------- | -------------------------------------- | -------------------------------- |
+| **制約違反**（`23xxx`） | **業務ルールの違反**が DB で顕在化した | ドメインのエラーへ翻訳（409 等） |
+| **それ以外**            | インフラの失敗                         | `RepositoryError`（500）         |
+
+一意制約違反を `MailAddressAlreadyExistsError`（409）に翻訳しているのがひとつ目の例。
+あれは「DB が壊れた」のではなく「同じメールアドレスの人が既に居た」であって、
+**客に伝えるべき情報**。接続断と同じ袋に入れてはいけない。
+
+### 内訳は型ではなくフィールドで持つ
+
+インフラの失敗は最終的に全部 500 に丸まるが、**ログでは切り分けたい**
+（「DB が落ちている」と「マイグレーション漏れ」が同じ行に見えるのは困る）。
+
+そこで `RepositoryError` を分割せず、`failure` と `sqlState` を**フィールドとして持たせた**。
+
+```ts
+class RepositoryError extends Data.TaggedError("RepositoryError")<{
+  readonly failure: RepositoryFailure; // unavailable / exhausted / contention / timeout / schema / data / unknown
+  readonly sqlState?: string;
+  readonly cause: unknown;
+}> {}
+```
+
+**型で分けるのは、呼び出し側が違う扱いをするときだけ。** ここでは command も controller も
+`handleErrorResponse` も全員が同じ扱い（500）をするので、型に出す理由がない。
+3 つの型に割ると全 command のシグネチャが変わるが、誰も分岐しないので得るものが無い
+（[`02-architecture.md`](02-architecture.md#ユースケースの入出力はそのコマンドクエリと同じファイルに置く) で
+コマンドのエラー型に名前を付けなかったのと同じ判断）。
+
+将来リトライを入れて**振る舞いが分岐したら**、そのとき型を検討する。
+
+### 分類の仕方
+
+`shared/db/error.ts` の `classifyDbFailure` が行う。判定の入り口は 2 つ。
+
+| 例外の形        | 判定に使うもの                      | 例                                               |
+| --------------- | ----------------------------------- | ------------------------------------------------ |
+| SQLSTATE がある | `errno` の**クラス**（先頭 2 文字） | `42P01` → `schema`                               |
+| SQLSTATE が無い | Bun 独自の `code`                   | `ERR_POSTGRES_CONNECTION_CLOSED` → `unavailable` |
+
+**接続できないときも例外は `PostgresError` だが `errno` は入らない。**
+サーバが何も返していないので当然だが、`errno` だけを見ていると
+接続断が `unknown` に落ちる。実際に一度そうなった（DB を止めて確認して気付いた）。
+
+クラスで括るのは、同じクラス内では原因の質が揃っているため（`08` はどれも「繋がらない」、
+`53` はどれも「資源が足りない」）。例外は `57014`（`query_canceled`）で、
+クラス `57` は「管理操作」だがこれだけは時間切れなので個別に見る。
+
+### 検証
+
+実 DB で確認済み。
+
+| 起こし方            | 結果                                         |
+| ------------------- | -------------------------------------------- |
+| テーブル名を変える  | `failure=schema sqlState=42P01`              |
+| DB コンテナを止める | `failure=unavailable`（`sqlState` は出ない） |
+
+ログにはこう出る。`failure=schema` で検索すればマイグレーション漏れだけ拾える。
+
+```text
+level=ERROR message=リクエストの処理に失敗しました
+  requestId=019fa5bc-... method=GET path=/users/... status=500
+  errorTag=RepositoryError failure=schema sqlState=42P01 cause="..."
+```
+
+---
+
 ## 環境変数
 
 - **`DATABASE_URL`** を `.env` に置く。Bun は `.env` を自動読込。drizzle.config.ts は

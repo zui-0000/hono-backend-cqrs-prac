@@ -3,6 +3,7 @@ import { Effect, Layer, Option } from "effect";
 
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { db } from "~/shared/db/client";
+import { classifyDbFailure } from "~/shared/db/error";
 import { RepositoryError } from "~/shared/errors/repository-error";
 
 import { tUser } from "./drizzle-schema";
@@ -23,6 +24,7 @@ export const GetUserQueryServiceLive = Layer.succeed(GetUserQueryService, {
           .from(tUser)
           .where(eq(tUser.id, id))
           .limit(1),
-      catch: (cause) => new RepositoryError({ cause }),
+      catch: (cause) =>
+        new RepositoryError({ ...classifyDbFailure(cause), cause }),
     }).pipe(Effect.map((rows) => Option.fromNullable(rows[0]))),
 });

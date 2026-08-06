@@ -46,6 +46,24 @@ export const resolveRequestId = (
   });
 
 /**
+ * インフラ由来の失敗だけが持つ情報 (原因と内訳)。いずれも外部には出さない。
+ *
+ * failure / sqlState があると「DB が落ちている」と「マイグレーション漏れ」を
+ * ログ側で切り分けられる。errorTag だけでは全部 RepositoryError に埋もれる。
+ *
+ * 値が無いキーは落とす。annotateLogs は undefined をそのまま `sqlState=undefined` と
+ * 出力してしまい、検索の邪魔になるため (接続断は SQLSTATE を持たない)。
+ */
+const infraContext = (error: ApplicationError): Record<string, unknown> =>
+  error._tag === "RepositoryError"
+    ? {
+        failure: error.failure,
+        ...(error.sqlState === undefined ? {} : { sqlState: error.sqlState }),
+        cause: String(error.cause),
+      }
+    : {};
+
+/**
  * 失敗したリクエストをログに記録する。
  *
  * 外部にはエラーコードと定型メッセージしか返さないため、
@@ -73,11 +91,7 @@ export const logFailure = (
   const log =
     status >= 500
       ? Effect.logError("リクエストの処理に失敗しました").pipe(
-          Effect.annotateLogs({
-            ...context,
-            // インフラ由来の失敗のみ原因を持つ (外部には出さない)。
-            cause: "cause" in error ? String(error.cause) : undefined,
-          }),
+          Effect.annotateLogs({ ...context, ...infraContext(error) }),
         )
       : Effect.logWarning("リクエストを受け付けられませんでした").pipe(
           Effect.annotateLogs(context),
