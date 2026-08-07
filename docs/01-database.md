@@ -48,6 +48,7 @@
 ```text
 drizzle.config.ts               # drizzle-kit 設定（orval.config.ts の隣）
 db/                             # アプリではないので src/ の外
+├─ database-url.ts              #   接続情報の読み取り（未設定なら throw）
 ├─ migrate.ts                   #   ランタイムマイグレータ（bun-sql）
 └─ migrations/                  #   生成 SQL + meta（git 管理）
 
@@ -279,6 +280,12 @@ level=ERROR message=リクエストの処理に失敗しました
 
 - **`DATABASE_URL`** を `.env` に置く。Bun は `.env` を自動読込。drizzle.config.ts は
   `import "dotenv/config"` で読む。
+- **未設定のまま進ませない。** アプリは Effect の `Config` が、道具側（`db/migrate.ts` /
+  `drizzle.config.ts`）は `db/database-url.ts` が、それぞれ起動時点で落とす。
+  素の `process.env.DATABASE_URL!` に戻してはいけない — **Bun.sql は未設定をエラーにせず
+  既定の接続先（localhost / OS ユーザー名）へフォールバックする**ため、設定漏れが
+  「動かない」ではなく「**別の DB に繋がる**」に化ける
+  （[`04-backlog.md`](04-backlog.md#processenvdatabase_url-の起動時検証2026-08-08-に解決)）。
 - **`.env`（実値・gitignore）と `.env.example`（雛形・commit）** に分ける。ローカルの接続情報は
   秘密ではないが、本番の秘密（RDS のパスワード等）は将来 **Secrets Manager 等から ECS タスクに注入**する。
   この「実行時は環境変数から」という作法を最初から通しておく。

@@ -113,24 +113,37 @@ HTTP 境界のみという方針なので、単体テストを足すかどうか
 
 ## 先送りした判断
 
-### `process.env.DATABASE_URL!` の起動時検証（アプリ本体は解決済み）
+### `process.env.DATABASE_URL!` の起動時検証（2026-08-08 に解決）
 
-かつて 3 箇所で非 null 断言を使っていた。**型を黙らせているだけ**で、未設定なら
-`undefined` のまま `drizzle()` に渡り、**最初のクエリまでエラーにならない**。
-本番（ECS）で環境変数の設定漏れがあると、起動は成功してリクエストで落ちる。
+かつて 3 箇所で非 null 断言を使っていた。当時は「**型を黙らせているだけ**で、
+設定漏れがあっても最初のクエリまでエラーにならない」と書いていたが、
+**この見立ては実害を過小評価していた**（後述）。3 箇所とも塞ぎ、断言はゼロになった。
 
-アプリ本体（`shared/infrastructure/db/client.ts`）は `Config.redacted` + 起動時のランタイム構築で解決した。
-`DATABASE_URL` を外して実際に確認済み — exit 1 で落ち、ポートは開かない。
-**効いたのは `Config` ではなく `main.ts` の `await runtime.runtime()` のほう**で、
-`ManagedRuntime` が遅延構築である以上、読み方を変えるだけでは壊れ方が変わらなかった
+アプリ本体（`shared/infrastructure/db/client.ts`）は `Config.redacted` +
+起動時のランタイム構築で解決。`DATABASE_URL` を外して確認済み — exit 1 で落ち、
+ポートは開かない。**効いたのは `Config` ではなく `main.ts` の
+`await runtime.runtime()` のほう**で、`ManagedRuntime` が遅延構築である以上、
+読み方を変えるだけでは壊れ方が変わらなかった
 （[`02-architecture.md`](02-architecture.md#ランタイムは起動時に構築しきる)）。
 
-**残っているのは開発・運用の道具側 2 つ**（ルートの `drizzle.config.ts` / `db/migrate.ts`）。
-どちらも Effect の外にいるため `Config` を使えず、素の `process.env` を見るしかない。
-アプリと違い失敗が即座に人間の目の前に出る（コマンドを手で叩いている）ぶん実害は小さいが、
-`migrate.ts` は**デプロイ時に動く**ので、落ちるならメッセージが読めるほうがよい。
-塞ぐなら「未設定なら分かる文言で throw する」小さなヘルパーを `db/` に置くことになる。
-アプリ側と機構が 2 つに分かれるため、その理由を doc に書けることが着手の条件。
+道具側 2 つ（ルートの `drizzle.config.ts` / `db/migrate.ts`）は
+[`db/database-url.ts`](../db/database-url.ts) で塞いだ。Effect の外にいるため
+`Config` は使えず、素の `process.env` を読んで未設定なら throw する。
+機構がアプリ側と 2 つに分かれるが、どちらも「依存を揃えられないなら動かさない」で
+揃っており、スクリプト 2 本のために Effect を持ち込むほうが不自然になる。
+`drizzle.config.ts` からの相対 import が drizzle-kit のローダで解決できることは
+実際に `db:generate` を通して確認した。未設定・空文字のどちらでも
+**両コマンドが exit 1 で落ちる**ことも確認済み。
+
+> **「実害は小さい」は誤りだった。** 着手前は「コマンドを手で叩くので失敗が即座に
+> 人間の目に入る」と見積もっていたが、実測したところ **Bun.sql は未設定を
+> エラーにせず既定の接続先へフォールバックする**。localhost:5432 に OS ユーザー名で
+> 繋ぎにいき、手元では `password authentication failed for user "zui"` で止まった。
+> つまり設定漏れは「動かない」ではなく「**別の DB に繋がる**」に化ける。
+> ローカルに trust 認証の Postgres が居れば、意図しない DB にマイグレーションが当たる。
+> 表に出るのも `Failed query: CREATE SCHEMA IF NOT EXISTS "drizzle"` で、
+> 環境変数の話が一言も出てこない。
+> **見積もりは「壊れ方を実際に踏んでから」書くこと。**
 
 ### エラー応答が契約で検証されていない
 
