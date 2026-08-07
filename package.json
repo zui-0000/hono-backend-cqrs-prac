@@ -16,9 +16,9 @@
     "lint:fix": "pnpm check:lint --fix && pnpm format:fix && pnpm check:types && pnpm check:deps",
     "generate:api": "orval",
     "prepare": "pnpm generate:api",
-    "db:generate": "drizzle-kit generate --config ./src/shared/db/drizzle.config.ts",
-    "db:migrate": "bun run src/shared/db/scripts/migrate.ts",
-    "db:studio": "drizzle-kit studio --config ./src/shared/db/drizzle.config.ts"
+    "db:generate": "drizzle-kit generate --config ./drizzle.config.ts",
+    "db:migrate": "bun run db/migrate.ts",
+    "db:studio": "drizzle-kit studio --config ./drizzle.config.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

@@ -32,7 +32,7 @@ const IMPL_LAYER = "^src/(contexts/[^/]+|shared)/infrastructure/";
 /**
  * 実装を知ってはいけない側。
  * contexts の内側 3 層に加え、shared のうちポート・型・共通部品・HTTP 基盤を
- * 置く層も含む (shared は infrastructure と db 以外すべて)。
+ * 置く層も含む (shared は infrastructure 以外すべて)。
  * 実装を結線してよいのは合成ルート (src/app-runtime.ts) と各 *-layer.ts だけ。
  */
 const PORT_SIDE =
@@ -142,25 +142,11 @@ export default {
       from: { path: PORT_SIDE },
       to: { path: IMPL_LAYER, reachable: true },
     },
-    {
-      name: "db-only-from-infrastructure",
-      severity: "error",
-      comment: message({
-        violation:
-          "実装以外の層 (contexts の domain / application / presentation、\n" +
-          "および shared のポート側) が shared/db (Drizzle) を参照しています。",
-        reason:
-          "「どう保存するか」を知ってよいのは infrastructure だけです。\n" +
-          "他の層が DB を知ると、テストに DB が必要になり、\n" +
-          "テーブル定義の変更が業務ルールや HTTP 層にまで波及します。",
-        fix:
-          "既存のポート (例: UserRepository) を使います。\n" +
-          "必要な問い合わせが無ければ、まずポートにメソッドを足し、\n" +
-          "その実装を infrastructure/ 側に書きます。",
-      }),
-      from: { path: PORT_SIDE },
-      to: { path: "^src/shared/db/" },
-    },
+    // かつてここに db-only-from-infrastructure を置いていた (from: PORT_SIDE →
+    // to: ^src/shared/db/)。Drizzle まわりを shared/infrastructure/db/ へ移したことで
+    // IMPL_LAYER に含まれるようになり、上の 4 ルール (とくに到達可能性で見る
+    // no-indirect-path-to-impl) が同じことを覆うため削除した。
+    // 消す前に、わざと違反するファイルで「今も検出されること」を確認済み。
     {
       name: "generated-only-from-presentation",
       severity: "error",

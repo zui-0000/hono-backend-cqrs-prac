@@ -9,7 +9,7 @@ export default defineConfig({
   // drizzle-kit は schema に glob / 配列を取れるため、分割しても migration は
   // 全テーブルをまとめて 1 系列 (out) で管理できる。
   schema: "./src/contexts/*/infrastructure/drizzle-schema.ts",
-  out: "./src/shared/db/migrations",
+  out: "./db/migrations",
   dialect: "postgresql",
   migrations: {
     // ファイル名の接頭辞を連番 (0000_) ではなくタイムスタンプにする。

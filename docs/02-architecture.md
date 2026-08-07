@@ -8,6 +8,8 @@
 ## ディレクトリ構成
 
 ```text
+drizzle.config.ts       # drizzle-kit の設定（orval.config.ts と同じくルートに置く）
+db/                     # マイグレータと成果物。アプリではないので src/ の外
 schema/                 # TypeSpec による API 契約（OpenAPI 3.1 を出力）
 src/
 ├─ main.ts              # エントリ（Bun）。本番の Layer から runtime を作り app に注入
@@ -29,8 +31,8 @@ src/
 │  ├─ presentation/     # ハンドラ / 検証 / エラー翻訳 / リクエストログ の共通基盤
 │  │  └─ constants/     #   API が外に見せる語彙。公開するのが `as const` の表と
 │  │                    #   派生型だけのファイルを置く（振る舞いを持つものは直下）
-│  ├─ infrastructure/   # 横断ポートの本番実装（Layer）。合成ルートだけが参照する
-│  └─ db/               # Drizzle クライアント / マイグレーション基盤（テーブル定義は持たない）
+│  └─ infrastructure/   # 実装（Layer）。横断ポートの本番実装と、DB の実行時コード
+│     └─ db/           #   接続の Layer と error/（例外を読む・分類する・翻訳する）
 ├─ __tests__/           # テストは対象と同階層の __tests__ に置く（コロケーション）
 └─ generated/           # orval が OpenAPI から生成（gitignore, prepare で再生成）
 docs/                   # 設計と学びの記録
@@ -141,11 +143,69 @@ infrastructure/drizzle-schema.ts   テーブル定義（export: tUser）
 | 生成された Effect Schema              | `src/generated/`           |
 | ネームスペース                        | PostgreSQL の用語          |
 
+### 失敗の翻訳 → 「`handle` + 何を」
+
+**各層には「失敗をその層の語彙へ直す窓口」がある。** 名前を揃えて、構造が読めるようにする。
+
+| 名前                           | 層             | 何を何に直すか                                 |
+| ------------------------------ | -------------- | ---------------------------------------------- |
+| `handleDbFailure`              | infrastructure | DB 例外 → `RepositoryError`                    |
+| `handleMailAddressDuplication` | infrastructure | 一意制約違反 → `MailAddressAlreadyExistsError` |
+| `handleErrorResponse`          | presentation   | `ApplicationError` → HTTP 応答                 |
+
+`handleDbFailure` は当初 `dbQuery` という名前で、Promise を作る関数を受け取るラッパだった。
+**名前が引数を説明していて、自分の仕事を説明していなかった**ため改めた。
+`try` は渡されたものを素通しするだけで、存在理由は `catch` 側にしかない。
+
+同じ理由で `write`（書き込みを包んで 409 に翻訳する）も改めた。あれは
+`updatePassword` や `deleteById` も「書き込み」なのに使っておらず、
+**そのズレをコメントで釈明していた**。コメントで名前を弁解し始めたら名前が負けている。
+
+`handleMailAddressDuplication` はドメインサービスの `checkMailAddressDuplication` と
+**名詞を揃えてある**。動詞だけが違う（書く前に確かめる / すり抜けたものを捕まえる）ので、
+二段構えの設計が名前だけで読める。
+
+### 翻訳はラッパではなく pipe の段に並べる
+
+```ts
+Effect.tryPromise(() => db.update(tUser).set({ ... }).where(...)).pipe(
+  handleDbFailure,                     // DB 例外 → RepositoryError
+  handleMailAddressDuplication(user),  // 一意制約違反 → 409
+  Effect.asVoid,
+);
+```
+
+`handleDbFailure` は当初 `Effect.tryPromise` を内側に隠すラッパだった。やめた理由は、
+**汎用の翻訳だけがラッパになり、集約固有の翻訳が pipe になる**という食い違いが生まれるから。
+同じ「失敗の翻訳」なのに形が 2 種類あると、名前を揃えた意味が薄れる。
+持ち上げ → 翻訳 → 翻訳、と並べば読む順と処理の順が一致する。
+
+呼び出し側に `Effect.tryPromise` が出てくるが、これは infrastructure の中だけの話で
+外へは波及しない。ポートが宣言する失敗は変わらず `RepositoryError` のままで、
+application も presentation も影響を受けない。
+
+**`Effect.tryPromise` が受け取るのは Promise ではなく「Promise を作る関数」であること**は
+崩さない。Promise を直接渡すと、Effect を組み立てた時点でクエリが走り出し、
+「Effect は実行ではなく手順書」という前提が壊れる。加えてリトライが効かなくなる
+（同じ Promise を await し直しても結果は変わらない）。
+`RepositoryFailure.Contention` を「リトライで直りうる」と分類している以上、これは他人事ではない。
+
+`handleDbFailure` が `UnknownException` から `error` を取り出して渡しているのは、
+`classifyDbFailure` と `isSqlStateViolation` が `cause` を辿って PostgresError を探すため。
+包みを増やさず、ドライバが投げた例外そのものを渡している。
+
+`handleWithEffect` だけは `handle` + **どうやって**で、Hono のハンドラを組み立てる側。
+形が違うが、そもそも別種のものなので揃えない。
+
+> `validate*` を presentation に予約したのとは扱いが違う。あちらは同じ語が層をまたぐと
+> 別の意味になってしまうので分けた。`handle` は**どの層でも「失敗をその層の言葉に直す」**で
+> 意味が割れないため、層をまたいで使う。
+
 ---
 
 ## テーブル定義は所有するコンテキストが持つ
 
-`shared/db/schema.ts` に全テーブルを集約するのをやめ、
+共有の 1 ファイル（かつての `shared/db/schema.ts`）に全テーブルを集約するのをやめ、
 `contexts/<context>/infrastructure/drizzle-schema.ts` に分けた。
 
 **集約（`User`）と保存先（`t_user`）の所有者を揃えるため。** 共有の 1 ファイルに集約すると、
@@ -153,9 +213,73 @@ infrastructure/drizzle-schema.ts   テーブル定義（export: tUser）
 command を通す」という規約を構造が何も守らなくなる。分けておけば越境が import 文に現れ、
 lint で機械的に禁じられる。
 
-**物理 DB とマイグレーションは 1 つのまま**（`shared/db/`）。drizzle-kit の `schema` は
+**物理 DB とマイグレーションは 1 つのまま**（リポジトリ直下の `db/`）。drizzle-kit の `schema` は
 glob を取れるため、ファイルを分けても migration は 1 系列で管理できる。
 詳細は [`01-database.md`](01-database.md)。
+
+---
+
+## DB 接続も Layer で注入する
+
+`shared/infrastructure/db/client.ts` は当初、モジュールのトップレベルで作った singleton を
+`export const db` していた。アダプタ（`*-live.ts`）はそれを直接 `import` していたので、
+このリポジトリで**唯一 DI から外れている場所**だった。これを `Database` タグに変え、
+`Layer.scoped` で供給する形にした。
+
+得たものは 3 つ。
+
+1. **接続の生成が `import` の副作用でなくなった。** 以前はモジュールが読まれた瞬間に
+   接続が作られていた。テストで差し替える口も、閉じる口も無い。
+2. **後始末ができる。** `Layer.scoped` + `Effect.acquireRelease` にしたので、
+   ランタイムの破棄に合わせて `$client.close()` が走る（引数なしの `close` は
+   実行中のクエリの完了を待つ）。実 DB で確認済み — `pg_stat_activity` を
+   **コンテナ側の psql から**観測すると、接続は 1 → 11（Bun.SQL のプールが 10 本開く）→
+   `dispose()` 直後に 1、とプロセスが生きたまま戻る。
+   なお計測をアプリのプロセス内でやろうとすると `Bun.SQL` の probe 自身がプールを広げ、
+   **測定器がノイズ源になる**（最大 9 本まで増えた）。外から数えること。
+3. **接続情報を `Config` から読めるようになった。** 後述。
+
+`Database` の型からは `$client` を落としている。接続の後始末は `client.ts` の責務であり、
+利用側に drizzle を迂回してドライバを直接触る余地を残さないため。
+
+ポートと実装を**同じファイルに置いている**のは、`shared/domain` と `shared/infrastructure`
+を分けた理由がここには当てはまらないから。あちらを分けたのは、ポートを import しただけで
+実装の依存まで引きずり込むのを避けるためだった。`Database` はドメインが要求するポートではなく
+**アダプタを組み立てるための資材**で、置き場も `shared/infrastructure/db/` の中にある。
+参照できるのが元から「実装を知ってよい側」だけなので、同居させてもポート側へ経路が伸びない。
+
+合成ルートでは `mergeAll` に並べず `Layer.provide` で与えている。
+
+```ts
+Layer.mergeAll(UserLayer, PasswordHasherLive, UuidGeneratorLive).pipe(
+  Layer.provide(DatabaseLive),
+);
+```
+
+こうすると `Database` はアダプタの要求を満たしたところで**外から見えなくなる**
+（`AppServices` に現れない）。DB 接続はアダプタを組み立てるための資材であって、
+application や presentation が受け取ってよいサービスではない。`mergeAll` に並べると
+誰でも `yield*` できてしまう。`provide` は Layer を一度だけ構築して共有するため、
+接続も 1 つで済む。
+
+### ランタイムは起動時に構築しきる
+
+`ManagedRuntime.make(AppLayer)` は**遅延構築**で、最初に Effect を走らせるまで
+Layer を組み立てない。そのため `main.ts` で `await runtime.runtime()` を挟んでいる。
+
+これが無いと、接続情報の不足に**最初のリクエストまで気付けない**。
+実際に `DATABASE_URL` を外して確かめたところ、サーバは正常に起動し、
+最初のリクエストで 500 が返った。しかもその失敗は `handleWithEffect` の外側で起きるため、
+**契約どおりの本文（`errorCode` / `message`）すら返らない**素の
+`Internal Server Error` だった。
+
+つまり `process.env.DATABASE_URL!` を `Config` に置き換えるだけでは、
+「起動は成功、リクエストで死ぬ」という壊れ方は何も変わらない。
+**設定を読む場所ではなく、Layer をいつ構築するかが効いている。**
+`await` を入れた後は起動時に exit 1 で落ち、ポートは開かない。
+
+なお `Config.redacted` を使っているので、失敗メッセージの値は `<redacted>` になる
+（接続文字列にはパスワードが入るため）。どの変数が足りないかは出るので困らない。
 
 ---
 
@@ -371,6 +495,42 @@ changeUserPassword  → updatePassword   （hashedPassword / updatedAt を書く
   （ファイナライザ）があるため避けた。
 - `validate*` は presentation 層の契約スキーマ検証（`validateJson` / `validateParams`）で
   使うため避ける。
+
+### 一意性は事前チェックと DB 制約の二段構えで守る
+
+`checkMailAddressDuplication`（ドメインサービス）と、`UserRepositoryLive` の `handleMailAddressDuplication`
+（一意制約違反 → `MailAddressAlreadyExistsError`）は**どちらも 409 を出す**。
+重複に見えるが、**役割が違うので両方要る**。
+
+|                                | 役割                                     | いつ効くか        |
+| ------------------------------ | ---------------------------------------- | ----------------- |
+| `checkMailAddressDuplication`  | 業務ルールをドメインで表明し、安く答える | 普段（実質 100%） |
+| `handleMailAddressDuplication` | 同時実行でも契約どおりの 409 を返す      | 競合時のみ        |
+
+事前チェックは**読んでから書くまでに隙間がある**（TOCTOU）。しかも `createUser` は
+チェックの後に argon2id のハッシュ化を挟むため、**窓が 100ms 前後まで開く**。
+送信ボタンの二重クリックや、届いていたリクエストのリトライで普通に踏める幅で、
+「同じ瞬間」である必要はない。
+
+実測（同一メールアドレスで同時に 10 リクエスト）:
+**事前チェックで弾かれたのは 0 件**、DB 制約で弾かれたのが 9 件。
+10 本とも「重複なし」と判定されてから INSERT で衝突している。
+
+だから**正しさを保証しているのは制約のほう**で、事前チェックは速く親切に答えるためのもの。
+アプリ側のロックでは代替できない（本番は複数タスクで動くため、
+全インスタンスをまたいで唯一性を保証できるのは共有している DB だけ）。
+
+逆に、どちらか一方を消すとこうなる。
+
+- **`handleMailAddressDuplication` を消す**: データは守られるが、競合時の応答が 409 から 500 に劣化する。
+  契約違反であり、クライアントは「入力を直す」べきか「再試行する」べきかを判断できない。
+- **事前チェックを消す**: 業務ルールの記述がマイグレーションの SQL だけになり、
+  ドメインを読んでも「同じメールアドレスの人は 2 人いない」が分からなくなる。
+  加えて、重複と分かるまでに毎回 argon2id を焼くことになる。
+
+なお `updatePassword` の `E` に `MailAddressAlreadyExistsError` が無いのは、
+あれがメールアドレスを書かないため。触らない列の制約違反は起こりえない。
+書き込みポートを状態遷移ごとに分けた効果がここにも出ている。
 
 ---
 

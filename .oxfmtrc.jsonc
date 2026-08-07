@@ -4,7 +4,7 @@
   // .gitignore と .prettierignore は自動で尊重されるので、追加の除外だけをここに書く
   // (src/generated は gitignore 済みで、orval の afterAllFilesWrite が個別に整形する)。
   "ignorePatterns": [
-    "src/shared/db/migrations/", // drizzle-kit の生成物 (SQL / meta JSON)
+    "db/migrations/", // drizzle-kit の生成物 (SQL / meta JSON)。人が書くものではない
     "schema/", // TypeSpec の別プロジェクト。整形は tsp format が担う
   ],
 

@@ -1,6 +1,7 @@
 import { Layer, type ManagedRuntime } from "effect";
 
 import { UserLayer } from "~/contexts/user/user-layer";
+import { DatabaseLive } from "~/shared/infrastructure/db/client";
 import { PasswordHasherLive } from "~/shared/infrastructure/password-hasher-live";
 import { UuidGeneratorLive } from "~/shared/infrastructure/uuid-generator-live";
 
@@ -41,12 +42,16 @@ export const AppLayer = Layer.mergeAll(
   UserLayer,
   PasswordHasherLive,
   UuidGeneratorLive,
-);
+).pipe(Layer.provide(DatabaseLive));
 
 /**
  * AppLayer が提供するサービスの総体。
  * union を手で保守せず Layer から導出するため、コンテキスト追加時は
  * AppLayer に足すだけで済む。
+ *
+ * Database はここに現れない。mergeAll ではなく provide で与えているため、
+ * アダプタの要求を満たした時点で外から見えなくなる。DB 接続はアダプタを
+ * 組み立てるための資材であって、提供するサービスではないため。
  */
 export type AppServices = Layer.Layer.Success<typeof AppLayer>;
 

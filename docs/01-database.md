@@ -41,22 +41,42 @@
 
 ---
 
-## ディレクトリ構成（`src/shared/db/`）
+## ディレクトリ構成
+
+**実行時のコードと、開発・デプロイの道具を、別の場所に置く。**
 
 ```text
-src/shared/db/
-├─ client.ts          # 接続クライアント（bun-sql）
-├─ error.ts           # SQLSTATE 判定ヘルパー
-├─ drizzle.config.ts  # drizzle-kit 設定
-├─ scripts/
-│  └─ migrate.ts      # ランタイムマイグレータ（bun-sql）
-└─ migrations/        # 生成 SQL + meta（git 管理）
+drizzle.config.ts               # drizzle-kit 設定（orval.config.ts の隣）
+db/                             # アプリではないので src/ の外
+├─ migrate.ts                   #   ランタイムマイグレータ（bun-sql）
+└─ migrations/                  #   生成 SQL + meta（git 管理）
+
+src/shared/infrastructure/db/   # 実行時に動くコード
+├─ client.ts                    #   接続クライアント（bun-sql）の Layer
+└─ error/
+   ├─ constants/
+   │  ├─ sql-state.ts                    # SQLSTATE の語彙
+   │  ├─ failure-by-sql-state-class.ts   # クラス → 内訳
+   │  └─ failure-by-error-code.ts        # Bun の code → 内訳
+   ├─ postgres-error-reader.ts  #   例外を読む / 制約違反を判定
+   ├─ classify-db-failure.ts    #   ログ用の内訳へ分類
+   └─ handle-db-failure.ts      #   失敗を RepositoryError へ翻訳
 
 src/contexts/<context>/infrastructure/
-└─ drizzle-schema.ts  # そのコンテキストが所有するテーブル定義
+└─ drizzle-schema.ts            # そのコンテキストが所有するテーブル定義
 ```
 
-- **`shared/db/` はテーブル定義を持たない**。ここに入るのは「物理 DB という 1 つの外部リソース」
+- **道具は `src/` の外に出す**。`drizzle.config.ts` はコード生成ツールの設定で、
+  同種の `orval.config.ts` がルートにあるのに揃えた。`db/` に入るのはデプロイ時に走る
+  スクリプトと生成された成果物で、どちらもアプリのコードではない。
+  こうすると **`src/` はアプリだけ**という線が引ける。
+  なお `migrate.ts` は本番で動くため、`tsconfig.json` の `include` に `db/**/*.ts` を足して
+  型チェックの対象に残してある（`drizzle.config.ts` は開発時にしか動かないので対象外）。
+- **実行時のコードは `shared/infrastructure/db/` に置く**。Layer もエラー翻訳も「実装」なので、
+  `PasswordHasherLive` などと同じ層に属する。おかげで `shared/` の直下は層の名前だけで揃い、
+  境界ルールも `infrastructure` 向けの既存ルールがそのまま効く
+  （[`03-boundary-enforcement.md`](03-boundary-enforcement.md#層ごとの可否)）。
+- **`db/` はテーブル定義を持たない**。ここに入るのは「物理 DB という 1 つの外部リソース」
   に関する共有物だけ（接続・エラー判定・マイグレーション基盤）。アダプタは各コンテキストにある。
 - **テーブル定義は所有するコンテキストの `infrastructure/drizzle-schema.ts` に置く**。集約（`User`）と
   保存先（`t_user`）の所有者を揃えるため。共有の 1 ファイルに集約すると、他コンテキストが
@@ -135,7 +155,7 @@ drizzle-schema.ts 編集
 | script                           | 内容                                                            |
 | -------------------------------- | --------------------------------------------------------------- |
 | `pnpm db:generate --name <name>` | マイグレーション生成（`--name` は任意。省くとランダム語になる） |
-| `pnpm db:migrate`                | 適用（`bun run src/shared/db/scripts/migrate.ts`）              |
+| `pnpm db:migrate`                | 適用（`bun run db/migrate.ts`）                                 |
 | `pnpm db:studio`                 | GUI（`https://local.drizzle.studio`）                           |
 
 ### ファイル名はタイムスタンプ接頭辞
@@ -167,7 +187,7 @@ DB コンテナの起動 / 停止は `docker compose up -d` / `docker compose st
 
 ### ランタイムマイグレータを採用した理由
 
-- `scripts/migrate.ts` が `drizzle-orm/bun-sql` の migrator で適用する。
+- `db/migrate.ts` が `drizzle-orm/bun-sql` の migrator で適用する。
   → 本番（ECS タスク）でも **`bun run` するだけ**で流せ、drizzle-kit も postgres.js も不要。
 - `drizzle-kit migrate` は **Bun ネイティブ SQL ドライバに非対応**（`pg` / `postgres.js` を要求）。
   そのため CLI ではなくランタイムマイグレータを使う。
@@ -221,7 +241,7 @@ class RepositoryError extends Data.TaggedError("RepositoryError")<{
 
 ### 分類の仕方
 
-`shared/db/error.ts` の `classifyDbFailure` が行う。判定の入り口は 2 つ。
+`shared/infrastructure/db/error/classify-db-failure.ts` の `classifyDbFailure` が行う。判定の入り口は 2 つ。
 
 | 例外の形        | 判定に使うもの                      | 例                                               |
 | --------------- | ----------------------------------- | ------------------------------------------------ |

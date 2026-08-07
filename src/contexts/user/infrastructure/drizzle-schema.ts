@@ -8,7 +8,7 @@ import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
  * 直接この表を書き換える経路が「他コンテキストの infrastructure を import する」
  * という目に見える形になり、lint で機械的に禁じられる。
  *
- * 物理 DB とマイグレーションは 1 つ (shared/db/) のまま。
+ * 物理 DB とマイグレーションは 1 つ (リポジトリ直下の db/) のまま。
  * drizzle-kit は schema に glob を取れるので、コンテキストごとに分割しても
  * migration は全テーブルをまとめて 1 系列で管理できる。
  */
