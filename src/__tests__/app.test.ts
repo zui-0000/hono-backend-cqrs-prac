@@ -8,6 +8,7 @@ import { RefreshTokenIssuer } from "~/contexts/auth/domain/refresh-token-issuer"
 import { RefreshTokenRepository } from "~/contexts/auth/domain/refresh-token-repository";
 import type { GetUserQueryOutput } from "~/contexts/user/application/get-user-query-service";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
+import { VerifyCredentialsQueryService } from "~/contexts/user/application/verify-credentials-query-service";
 import { User } from "~/contexts/user/domain/model/user";
 import { UserHashedPassword } from "~/contexts/user/domain/model/value-objects/user-hashed-password";
 import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
@@ -85,6 +86,7 @@ const makeRuntime = (
     readonly refreshTokenRepository?: Partial<RefreshTokenRepository["Type"]>;
     readonly refreshTokenIssuer?: Partial<RefreshTokenIssuer>;
     readonly accessTokenIssuer?: Partial<AccessTokenIssuer>;
+    readonly verifyCredentialsQueryService?: Partial<VerifyCredentialsQueryService>;
   } = {},
 ): AppRuntime =>
   ManagedRuntime.make(
@@ -126,6 +128,10 @@ const makeRuntime = (
         issue: () => Effect.succeed(FAKE_ACCESS_TOKEN),
         verify: () => Effect.fail(new UnauthorizedError()),
         ...overrides.accessTokenIssuer,
+      }),
+      Layer.succeed(VerifyCredentialsQueryService, {
+        execute: () => Effect.succeed(Option.none()),
+        ...overrides.verifyCredentialsQueryService,
       }),
       // 採番を固定し、生成される id を予測可能にする。
       Layer.succeed(UuidGenerator, { next: Effect.succeed(FIXED_UUID) }),

@@ -6,7 +6,6 @@ import { decodeInput } from "~/shared/presentation/request-validator";
 
 import { RefreshCommandInput } from "../application/refresh-command";
 
-/** 受け取る検証済みの入力。auth-routes.ts の request 宣言と対応する。 */
 type RefreshControllerInput = { body: typeof RefreshBody.Type };
 
 /**

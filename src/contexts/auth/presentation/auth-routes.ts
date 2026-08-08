@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 
 import {
+  Login200Response,
+  LoginBody,
+  LoginHeader,
   Refresh200Response,
   RefreshBody,
   RefreshHeader,
@@ -9,18 +12,27 @@ import { HttpStatus } from "~/shared/presentation/constants/http-status";
 import { handleWithEffect } from "~/shared/presentation/handle-with-effect";
 
 import type { AuthRuntime } from "../auth-runtime";
+import { loginController } from "./login-controller";
 import { refreshController } from "./refresh-controller";
 
 /**
  * auth コンテキストの HTTP 経路。パスは TypeSpec の @route と対応する
  * (このルータ自体は app.ts が "/auth" にマウントするので、ここでは相対パス)。
  *
- * login / logout は未実装。login は user 側に読み取りポートを新設してから、
- * logout は Bearer の検証ミドルウェアが入ってから足す
- * (どちらも docs/05-auth/01-our-approach.md に段取りがある)。
+ * logout は未実装。Bearer の検証ミドルウェアが入ってから足す
+ * (段取りは docs/05-auth/01-our-approach.md)。
  */
 export const authRoutes = (runtime: AuthRuntime): Hono => {
   const routes = new Hono();
+
+  routes.post(
+    "/login",
+    handleWithEffect({
+      request: { header: LoginHeader, body: LoginBody },
+      response: { status: HttpStatus.Ok, body: Login200Response },
+      controller: loginController,
+    })(runtime),
+  );
 
   routes.post(
     "/refresh",

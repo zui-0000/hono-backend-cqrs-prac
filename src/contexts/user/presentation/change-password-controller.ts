@@ -10,7 +10,6 @@ import type {
 } from "~/generated/users";
 import { decodeInput } from "~/shared/presentation/request-validator";
 
-/** 受け取る検証済みの入力。user-routes.ts の request 宣言と対応する。 */
 type ChangePasswordControllerInput = {
   body: typeof ChangePasswordBody.Type;
   params: typeof ChangePasswordParams.Type;

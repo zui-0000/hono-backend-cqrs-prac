@@ -3,8 +3,9 @@
 方式そのものの解説は [`00-authentication-methods.md`](00-authentication-methods.md) にある。
 ここは**このリポジトリが何を選び、何をまだ決めていないか**だけを書く。
 
-> **状態**（2026-08-08）: `POST /auth/refresh` が動作。ローテーション・猶予期間・
-> 盗難検出まで実 DB で確認済み。login / logout と Bearer 検証はこれから。
+> **状態**（2026-08-08）: `POST /auth/login` と `POST /auth/refresh` が動作。
+> ローテーション・猶予期間・盗難検出まで実 DB で確認済み。
+> 残るは logout と Bearer 検証ミドルウェア。
 > 残る未決は Cookie への移行だけで、それはフロントの構成が決まるまで動かせない。
 
 ---
@@ -265,6 +266,64 @@ auth の内側には置けない。リフレッシュトークンのほうは au
 
 **user 側に auth 向けの読み取りポートを新設する**のが筋。
 DDD の Customer/Supplier（使う側の要求を、供給側が受けて公開する）の初適用になる。
+
+### 公開した面：`VerifyCredentialsQueryService`
+
+```text
+auth/application/login-command.ts
+      ↓ これだけを使う（UserRepository には触れない）
+user/application/verify-credentials-query-service.ts     ← 公開した面
+      ↓ 実装は user の内側で
+user/infrastructure/… → UserRepository + verifyUserPassword
+```
+
+```ts
+execute: (params: { mailAddress: string; password: string }) =>
+  Effect<Option<UserId>, RepositoryError>;
+```
+
+**ハッシュを返さず、照合ごと引き受ける形**にした。当初は `{ id, hashedPassword }` を
+返して auth 側で照合する案だったが、そうすると得るものより失うものが多い。
+
+- **同じ業務ルールを 2 か所に持つことになる。** 「このパスワードで合っているか」は
+  既に user の domain にある（`verifyUserPassword`。ビジネス側に
+  「パスワード変更のとき現在のパスワードを確認するか」を聞ける、という基準で内側に置いた）。
+- **ハッシュが境界を越える。** 渡す情報は少ないほどよい。
+- 副産物として、**auth は `PasswordHasher` を要求しなくなった**。
+  auth が知るべきは「券をどう作るか」だけで、「パスワードをどう照合するか」ではない。
+
+### 失敗は user 側で畳む
+
+「利用者が居ない」と「パスワードが違う」を **どちらも `Option.none`** にまとめる。
+書き分けると総当たりでメールアドレスの登録有無を判定できてしまう（アカウント列挙）。
+401 へ翻訳するのは auth の責務。**実測で応答本文が 1 バイトも違わないことを確認済み。**
+
+### 入力は素の string、返す id は branded
+
+非対称に見えるが、**使われ方で決めている**。入力は「照合してもらう材料」で、
+値オブジェクトへの変換は所有者である user の仕事。一方 id は auth 側で
+`RefreshToken` 集約の項目になる（あちらの `userId` は `UserId` 型）ので、
+素の string で返すと**自分の DB から出したばかりの値を境界の向こうで検証し直す**
+という無駄が生まれる。
+
+`GetUserQueryOutput` が素の string なのは、あれが HTTP 応答へ直行して
+ドメインの値として使われないため。**射影だから常に素、ではない。**
+
+### Query なのに domain を経由する
+
+`get-user-query-service.ts` には「Query は domain を経由しない」と書いてあり、
+`VerifyCredentialsQueryServiceLive` は**その例外**にあたる。
+照合が業務ルールとして既に domain にあるためで、経由を避けて `PasswordHasher` を
+直接叩くと上記のとおりルールが 2 か所になる。
+**射影を返すという性質より、ルールを 1 つに保つほうを採った。**
+
+### ルールは止めてくれない
+
+`no-cross-context-internals` が禁じるのは相手の `infrastructure` / `presentation` だけ。
+`UserRepository` は `domain/` にあるので、**auth から import しても lint は通る**。
+ここを守っているのは規約と人間の判断だけで、機械ではない
+（[`../03-boundary-enforcement.md`](../03-boundary-enforcement.md#落とし穴) の
+「ルールが守るのはファイルの分け方が正しいという前提の上」と同じ構図）。
 
 ---
 

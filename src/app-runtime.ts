@@ -46,7 +46,7 @@ export const AppLayer = Layer.mergeAll(
   PasswordHasherLive,
   AccessTokenIssuerLive,
   UuidGeneratorLive,
-).pipe(Layer.provide(DatabaseLive));
+).pipe(Layer.provide(Layer.mergeAll(PasswordHasherLive, DatabaseLive)));
 
 /**
  * AppLayer が提供するサービスの総体。

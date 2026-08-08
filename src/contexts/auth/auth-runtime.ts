@@ -1,5 +1,6 @@
 import type { ManagedRuntime } from "effect";
 
+import type { VerifyCredentialsQueryService } from "~/contexts/user/application/verify-credentials-query-service";
 import type { AccessTokenIssuer } from "~/shared/domain/access-token-issuer";
 import type { UuidGenerator } from "~/shared/domain/uuid-generator";
 
@@ -18,6 +19,7 @@ export type AuthRuntime = ManagedRuntime.ManagedRuntime<
   | RefreshTokenRepository
   | RefreshTokenIssuer
   | AccessTokenIssuer
+  | VerifyCredentialsQueryService
   | UuidGenerator,
   never
 >;

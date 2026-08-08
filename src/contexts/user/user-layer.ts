@@ -2,6 +2,7 @@ import { Layer } from "effect";
 
 import { GetUserQueryServiceLive } from "./infrastructure/get-user-query-service-live";
 import { UserRepositoryLive } from "./infrastructure/user-repository-live";
+import { VerifyCredentialsQueryServiceLive } from "./infrastructure/verify-credentials-query-service-live";
 
 /**
  * user コンテキストが提供する実装 (アダプタ) を束ねた Layer。
@@ -21,4 +22,9 @@ import { UserRepositoryLive } from "./infrastructure/user-repository-live";
 export const UserLayer = Layer.mergeAll(
   UserRepositoryLive,
   GetUserQueryServiceLive,
+  // auth からの要求に応えて公開している面 (Customer/Supplier)。
+  // 内側で UserRepository を使うので、自分のコンテキストのものをここで供給する。
+  // PasswordHasher は横断サービスなので供給せず、要求として合成ルートへ預ける
+  // (この Layer の RIn に現れる)。
+  VerifyCredentialsQueryServiceLive.pipe(Layer.provide(UserRepositoryLive)),
 );
