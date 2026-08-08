@@ -14,8 +14,6 @@ import { UserRepository } from "../domain/user-repository";
 
 /**
  * ユーザー更新の入力。
- * id はパスパラメータ、それ以外はボディ由来だが、ユースケースから見れば
- * 入力は 1 つなので合成した形で定義する (組み立ては presentation 層の責務)。
  */
 export const UpdateUserCommandInput = Schema.Struct({
   id: UserId,

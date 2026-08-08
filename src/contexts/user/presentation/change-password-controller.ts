@@ -19,10 +19,6 @@ type ChangePasswordControllerInput = {
 /**
  * パスワードを変更する (PUT /users/{id}/password)。
  *
- * updateUserController と同じく、パスパラメータとボディを 1 つのユースケース入力へ
- * 合成する。プロフィール更新と別のエンドポイントに分けてあるのは、
- * 本人確認 (現在のパスワード) を伴う別の操作だから。
- *
  * リクエストの契約検証と応答の組み立ては user-routes.ts が行う。
  * 契約上は要認証 (Bearer) だが、認証は auth コンテキストの実装後に追加する。
  */

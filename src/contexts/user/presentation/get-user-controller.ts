@@ -4,7 +4,6 @@ import { GetUserQueryService } from "~/contexts/user/application/get-user-query-
 import type { GetUserParams } from "~/generated/users";
 import { orNotFound } from "~/shared/application/or-not-found";
 
-/** 受け取る検証済みの入力。user-routes.ts の request 宣言と対応する。 */
 type GetUserControllerInput = { params: typeof GetUserParams.Type };
 
 /**
@@ -21,6 +20,5 @@ export const getUserController = ({ params }: GetUserControllerInput) =>
     // 存在しない id は「見つからない」として 404 に翻訳する。
     const user = yield* getUserQueryService.execute(params.id).pipe(orNotFound);
 
-    // 契約が返すのは name / mailAddress のみ (DTO をそのまま流さない)。
     return { name: user.name, mailAddress: user.mailAddress };
   });

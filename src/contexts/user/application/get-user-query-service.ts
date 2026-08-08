@@ -5,10 +5,6 @@ import type { RepositoryError } from "~/shared/errors/repository-error";
 /**
  * getUser クエリの結果。ドメインの User 集約ではなく読み取り専用の射影で、
  * 必要になった項目だけを持たせる (集約の全項目を写さない)。
- *
- * 「UserDto」のような集約名ベースではなくユースケース名で命名するのは、
- * 一覧取得を足したときに別の射影が必要になるため
- * (どちらも「ユーザーの DTO」なので集約名では区別できない)。
  */
 export type GetUserQueryOutput = {
   readonly name: string;
