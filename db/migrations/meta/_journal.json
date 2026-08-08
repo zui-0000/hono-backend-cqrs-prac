@@ -15,6 +15,13 @@
       "when": 1786148948835,
       "tag": "20260808002908_create_t_refresh_token",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786153381316,
+      "tag": "20260808014301_add_revoked_reason",
+      "breakpoints": true
     }
   ]
 }

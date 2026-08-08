@@ -49,9 +49,26 @@ export const RefreshToken = Schema.Struct({
   userId: UserId,
   expiresAt: Schema.DateFromSelf,
   revokedAt: Schema.OptionFromNullOr(Schema.DateFromSelf),
+  revokedReason: Schema.OptionFromNullOr(Schema.Literal("rotated", "revoked")),
   createdAt: Schema.DateFromSelf,
 });
 export type RefreshToken = typeof RefreshToken.Type;
+
+/**
+ * なぜ失効したか。**猶予期間が効くのはローテーションのときだけ。**
+ *
+ * 時刻だけでは足りない。ログアウトや盗難検出で切った券にも猶予を与えると、
+ * 「切ったはずのセッションが 30 秒間使える」ことになる。実際そうなっていて、
+ * 盗難検出の直後に古い券で更新するとローテーションが走り、**セッションが生き返った**。
+ */
+export const RevokedReason = {
+  /** ローテーションで置き換えられた。飛行中のリクエストのために猶予が要る */
+  Rotated: "rotated",
+  /** ログアウト / 盗難検出で切られた。**猶予なしで即座に無効** */
+  Revoked: "revoked",
+} as const;
+
+export type RevokedReason = (typeof RevokedReason)[keyof typeof RevokedReason];
 
 /**
  * 提示された券の状態。refresh の分岐はこれだけで決まる。
@@ -62,10 +79,12 @@ export type RefreshToken = typeof RefreshToken.Type;
 export const RefreshTokenState = {
   /** 使える。通常のローテーションへ進む */
   Usable: "usable",
-  /** 失効済みだが猶予期間の内。並行更新とみなして同じく進む */
+  /** ローテーションで置き換えられたが猶予期間の内。並行更新とみなして同じく進む */
   WithinGrace: "within-grace",
-  /** 失効済みで猶予期間の外。**盗難のサイン** */
+  /** ローテーションで置き換えられ、猶予期間の外。**盗難のサイン** */
   Reused: "reused",
+  /** ログアウト / 盗難検出で切られた。**盗難ではない**ので追加の防御は要らない */
+  Revoked: "revoked",
   /** 期限切れ。再ログインが要る */
   Expired: "expired",
 } as const;
@@ -97,6 +116,7 @@ export const issueRefreshToken = (params: {
       userId: params.userId,
       expiresAt: new Date(timestamp.getTime() + TTL_MILLIS),
       revokedAt: Option.none(),
+      revokedReason: Option.none(),
       createdAt: timestamp,
     })),
   );
@@ -105,14 +125,19 @@ export const issueRefreshToken = (params: {
  * 失効させた券を返す (元の値は書き換えない)。
  * 行を消さず時刻で印を付けるのは、**再利用を検出するため**。
  * 消すと「盗まれた券の再利用」と「知らない券」が区別できなくなる。
+ *
+ * 理由を必須にしているのは、**猶予期間を与えてよいかがそれで決まる**から。
+ * 引数から省けるようにすると、ログアウトで切った券に猶予が付く事故が起きる。
  */
 export const revokeRefreshToken = (
   token: RefreshToken,
+  reason: RevokedReason,
 ): Effect.Effect<RefreshToken> =>
   now.pipe(
     Effect.map((timestamp) => ({
       ...token,
       revokedAt: Option.some(timestamp),
+      revokedReason: Option.some(reason),
     })),
   );
 
@@ -122,6 +147,13 @@ export const revokeRefreshToken = (
  * 期限切れを先に見るのは、**期限切れの券の再利用を盗難扱いしない**ため。
  * 期限が切れていれば攻撃者が使っても何も得られず、一方で 2 週間ぶりに開いた
  * 正規のクライアントが誤検出されるほうが実害が大きい。
+ *
+ * 失効の理由を見るのは、**猶予期間がローテーション専用の救済**だから。
+ * 理由を見ずに時刻だけで判定すると、ログアウトや盗難検出で切った券にも猶予が付き、
+ * 「切ったはずのセッションが 30 秒間使える」ことになる。
+ *
+ * 理由が読めない行 (時刻はあるのに理由が無い) は **Revoked に倒す**。
+ * 判断に迷ったら猶予を与えないほうが安全側に落ちる。
  */
 export const classifyRefreshToken = (
   token: RefreshToken,
@@ -133,10 +165,14 @@ export const classifyRefreshToken = (
       }
       return Option.match(token.revokedAt, {
         onNone: () => RefreshTokenState.Usable,
-        onSome: (revokedAt) =>
-          at.getTime() - revokedAt.getTime() <= GRACE_PERIOD_MILLIS
+        onSome: (revokedAt) => {
+          const rotated =
+            Option.getOrNull(token.revokedReason) === RevokedReason.Rotated;
+          if (!rotated) return RefreshTokenState.Revoked;
+          return at.getTime() - revokedAt.getTime() <= GRACE_PERIOD_MILLIS
             ? RefreshTokenState.WithinGrace
-            : RefreshTokenState.Reused,
+            : RefreshTokenState.Reused;
+        },
       });
     }),
   );

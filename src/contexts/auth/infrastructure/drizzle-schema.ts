@@ -44,6 +44,13 @@ export const tRefreshToken = pgTable(
     // 検出するためで、消すと盗難の兆候が「知らない券」と区別できなくなる。
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
 
+    // なぜ失効したか。**猶予期間はローテーション専用の救済**なので、
+    // 時刻だけでは足りない (rotated / revoked を区別しないと、ログアウトや
+    // 盗難検出のあと 30 秒間その券が通ってしまう)。
+    revokedReason: text("revoked_reason", {
+      enum: ["rotated", "revoked"],
+    }),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

@@ -1,0 +1,1 @@
+ALTER TABLE "t_refresh_token" ADD COLUMN "revoked_reason" text;

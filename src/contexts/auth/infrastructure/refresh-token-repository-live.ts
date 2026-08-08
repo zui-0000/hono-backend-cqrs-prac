@@ -1,7 +1,10 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { Effect, Layer, Option, Schema } from "effect";
 
-import { RefreshToken } from "~/contexts/auth/domain/model/refresh-token";
+import {
+  RefreshToken,
+  RevokedReason,
+} from "~/contexts/auth/domain/model/refresh-token";
 import { RefreshTokenRepository } from "~/contexts/auth/domain/refresh-token-repository";
 import { Database } from "~/shared/infrastructure/db/client";
 import { handleDbFailure } from "~/shared/infrastructure/db/error/handle-db-failure";
@@ -58,25 +61,30 @@ export const RefreshTokenRepositoryLive = Layer.effect(
           db.transaction(async (tx) => {
             await tx
               .update(tRefreshToken)
-              .set({ revokedAt: Option.getOrNull(revoked.revokedAt) })
+              .set({
+                revokedAt: Option.getOrNull(revoked.revokedAt),
+                revokedReason: Option.getOrNull(revoked.revokedReason),
+              })
               .where(eq(tRefreshToken.id, revoked.id));
             await tx.insert(tRefreshToken).values(toRow(issued));
           }),
         ).pipe(handleDbFailure, Effect.asVoid),
 
-      // 既に失効している行は触らない (is null で絞る)。上書きすると
-      // 「いつ失効したか」がずれ、猶予期間の判定が狂う。
+      // **セッションの行すべてを対象にする。** 既に失効している行も含めて理由を
+      // revoked へ倒さないと、ローテーション済みで猶予期間内の券が生き残り、
+      // 切ったはずのセッションが数十秒使えてしまう (実測で踏んだ穴)。
+      //
+      // 失効時刻のほうは coalesce で**既にある値を残す**。いつ最初に失効したかは
+      // 監査の手掛かりなので上書きしない。判定は理由だけを見るので、時刻は問わない。
       revokeSession: ({ sessionId, revokedAt }) =>
         Effect.tryPromise(() =>
           db
             .update(tRefreshToken)
-            .set({ revokedAt })
-            .where(
-              and(
-                eq(tRefreshToken.sessionId, sessionId),
-                isNull(tRefreshToken.revokedAt),
-              ),
-            ),
+            .set({
+              revokedAt: sql`coalesce(${tRefreshToken.revokedAt}, ${revokedAt})`,
+              revokedReason: RevokedReason.Revoked,
+            })
+            .where(eq(tRefreshToken.sessionId, sessionId)),
         ).pipe(handleDbFailure, Effect.asVoid),
     };
   }),

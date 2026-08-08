@@ -4,6 +4,8 @@ import { Effect, Layer, ManagedRuntime, Option, Schema } from "effect";
 
 import { createApp } from "~/app";
 import type { AppRuntime } from "~/app-runtime";
+import { RefreshTokenIssuer } from "~/contexts/auth/domain/refresh-token-issuer";
+import { RefreshTokenRepository } from "~/contexts/auth/domain/refresh-token-repository";
 import type { GetUserQueryOutput } from "~/contexts/user/application/get-user-query-service";
 import { GetUserQueryService } from "~/contexts/user/application/get-user-query-service";
 import { User } from "~/contexts/user/domain/model/user";
@@ -11,9 +13,11 @@ import { UserHashedPassword } from "~/contexts/user/domain/model/value-objects/u
 import { UserId } from "~/contexts/user/domain/model/value-objects/user-id";
 import { UserName } from "~/contexts/user/domain/model/value-objects/user-name";
 import { UserRepository } from "~/contexts/user/domain/user-repository";
+import { AccessTokenIssuer } from "~/shared/domain/access-token-issuer";
 import { MailAddress } from "~/shared/domain/model/value-objects/mail-address";
 import { PasswordHasher } from "~/shared/domain/password-hasher";
 import { UuidGenerator } from "~/shared/domain/uuid-generator";
+import { UnauthorizedError } from "~/shared/errors/unauthorized-error";
 import { ErrorCode } from "~/shared/presentation/constants/error-code";
 import { HttpHeader } from "~/shared/presentation/constants/http-header";
 import { HttpStatus } from "~/shared/presentation/constants/http-status";
@@ -64,12 +68,23 @@ const makeUser = (
   updatedAt: new Date(0),
 });
 
+/** 偽のリフレッシュトークン。券そのものと、その「ハッシュ」の代わり。 */
+const FAKE_REFRESH_TOKEN = "rt_fake-refresh-token-for-tests-0123456789";
+const FAKE_TOKEN_HASH =
+  "0000000000000000000000000000000000000000000000000000000000000000";
+
+/** 偽のアクセストークン。契約が 3 セグメント形式を要求するので形は揃える。 */
+const FAKE_ACCESS_TOKEN = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ0ZXN0In0.signature";
+
 /** テスト用ランタイム。検証したいサービスだけケースごとに部分差し替えする。 */
 const makeRuntime = (
   overrides: {
     readonly userRepository?: Partial<UserRepository["Type"]>;
     readonly getUserQueryService?: Partial<GetUserQueryService>;
     readonly passwordHasher?: Partial<PasswordHasher>;
+    readonly refreshTokenRepository?: Partial<RefreshTokenRepository["Type"]>;
+    readonly refreshTokenIssuer?: Partial<RefreshTokenIssuer>;
+    readonly accessTokenIssuer?: Partial<AccessTokenIssuer>;
   } = {},
 ): AppRuntime =>
   ManagedRuntime.make(
@@ -91,6 +106,26 @@ const makeRuntime = (
         hash: () => Effect.succeed(FAKE_HASH),
         verify: () => Effect.succeed(true),
         ...overrides.passwordHasher,
+      }),
+      Layer.succeed(RefreshTokenRepository, {
+        create: () => Effect.void,
+        findByTokenHash: () => Effect.succeed(Option.none()),
+        rotate: () => Effect.void,
+        revokeSession: () => Effect.void,
+        ...overrides.refreshTokenRepository,
+      }),
+      Layer.succeed(RefreshTokenIssuer, {
+        issue: Effect.succeed({
+          token: FAKE_REFRESH_TOKEN,
+          hash: FAKE_TOKEN_HASH,
+        }),
+        hash: () => Effect.succeed(FAKE_TOKEN_HASH),
+        ...overrides.refreshTokenIssuer,
+      }),
+      Layer.succeed(AccessTokenIssuer, {
+        issue: () => Effect.succeed(FAKE_ACCESS_TOKEN),
+        verify: () => Effect.fail(new UnauthorizedError()),
+        ...overrides.accessTokenIssuer,
       }),
       // 採番を固定し、生成される id を予測可能にする。
       Layer.succeed(UuidGenerator, { next: Effect.succeed(FIXED_UUID) }),

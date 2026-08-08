@@ -1,6 +1,8 @@
 import { Layer, type ManagedRuntime } from "effect";
 
+import { AuthLayer } from "~/contexts/auth/auth-layer";
 import { UserLayer } from "~/contexts/user/user-layer";
+import { AccessTokenIssuerLive } from "~/shared/infrastructure/access-token-issuer-live";
 import { DatabaseLive } from "~/shared/infrastructure/db/client";
 import { PasswordHasherLive } from "~/shared/infrastructure/password-hasher-live";
 import { UuidGeneratorLive } from "~/shared/infrastructure/uuid-generator-live";
@@ -40,7 +42,9 @@ import { UuidGeneratorLive } from "~/shared/infrastructure/uuid-generator-live";
  */
 export const AppLayer = Layer.mergeAll(
   UserLayer,
+  AuthLayer,
   PasswordHasherLive,
+  AccessTokenIssuerLive,
   UuidGeneratorLive,
 ).pipe(Layer.provide(DatabaseLive));
 

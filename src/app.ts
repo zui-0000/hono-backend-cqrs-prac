@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import type { AppRuntime } from "~/app-runtime";
+import { authRoutes } from "~/contexts/auth/presentation/auth-routes";
 import { userRoutes } from "~/contexts/user/presentation/user-routes";
 
 /**
@@ -20,6 +21,7 @@ export const createApp = (runtime: AppRuntime) => {
   app.get("/health", (c) => c.json({ status: "ok" }));
 
   app.route("/users", userRoutes(runtime));
+  app.route("/auth", authRoutes(runtime));
 
   return app;
 };
