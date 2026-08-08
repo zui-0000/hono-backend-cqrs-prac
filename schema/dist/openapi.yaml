@@ -534,9 +534,12 @@ components:
       type: object
       required:
         - accessToken
+        - refreshToken
       properties:
         accessToken:
           $ref: '#/components/schemas/AccessToken'
+        refreshToken:
+          $ref: '#/components/schemas/RefreshToken'
       title: RefreshResponse
     RefreshToken:
       type: string

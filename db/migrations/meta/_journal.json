@@ -8,6 +8,13 @@
       "when": 1785624353719,
       "tag": "20260801224553_create_t_user",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786148948835,
+      "tag": "20260808002908_create_t_refresh_token",
+      "breakpoints": true
     }
   ]
 }

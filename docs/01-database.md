@@ -85,10 +85,27 @@ src/contexts/<context>/infrastructure/
   規約を構造が何も守らなくなる。分けておけば越境が import 文に現れ、lint で機械的に禁じられる。
 - **物理 DB とマイグレーションは 1 つのまま**。drizzle-kit の `schema` は glob / 配列を取れるため
   （`"./src/contexts/*/infrastructure/drizzle-schema.ts"`）、ファイルを分けても migration は
-  全テーブルをまとめて 1 系列（`out`）で管理できる。境界を跨ぐ FK も、
-  相手コンテキストの `drizzle-schema.ts` を import すれば書ける（その依存が可視化されるのが利点）。
+  全テーブルをまとめて 1 系列（`out`）で管理できる。
+- **コンテキストを跨ぐ参照に FK を張らない**（後述）。
 - **ドメインモデル（集約・値オブジェクト）は `contexts/<context>/domain/` に置く**。
   テーブル↔ドメインの変換は同じコンテキストの `infrastructure/` の repository が担う。
+
+### コンテキストを跨ぐ参照に FK を張らない
+
+`t_refresh_token.user_id`（auth 所有）は `t_user.id`（user 所有）を指すが、
+**Drizzle でも DB でも外部キー制約は宣言しない**。
+
+制約を張ると「**user コンテキストの削除が auth の都合で失敗する**」という結合が生まれる。
+`deleteUser` の時点で券が残っていれば FK 違反で落ちる、という形で、
+コンテキストを分けた意味が消える。参照整合性は DB 制約ではなく、
+**参照する側（auth）の手順**で保つ — user が消えたら券も片付ける、というルールを
+アプリのユースケースとして持つ。将来 DB を分けても壊れない形でもある。
+
+> かつてここには「境界を跨ぐ FK も、相手コンテキストの `drizzle-schema.ts` を
+> import すれば書ける（その依存が可視化されるのが利点）」と書いていた。
+> **これは `no-cross-context-internals` と両立しない** — あのルールは他コンテキストの
+> `infrastructure/` への import をまさに禁じている。`auth` が初のコンテキスト跨ぎで、
+> 実際に書こうとするまで矛盾に気付かなかった。2026-08-08 に撤回。
 
 ---
 
